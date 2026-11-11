@@ -43,7 +43,7 @@ class Harness:
             self.signet.register_consumer(str(self.consumer_address), canonical({'policy_id': self.policy, 'policy_revision': 1, 'schema_id': self.schema, 'unresolved_consequence': 'DO_NOT_LINK' if kind == 'INCIDENT' else 'KEEP_HOLD'}))
         self.generation = {}
 
-    def make(self, request_id='r1', left_id='left', right_id='right', changes=None, flags=None, missing=None, generation=None, prepare=True, supersedes='', revision=1):
+    def make(self, request_id='r1', left_id='left', right_id='right', changes=None, flags=None, missing=None, generation=None, prepare=True, supersedes='', revision=1, extra_lines=None):
         values = dict(zip(FIELDS[self.kind], VALUES[self.kind]))
         side_values = [dict(values), dict(values)]
         if changes:
@@ -58,6 +58,8 @@ class Harness:
             lines = [f'Synthetic public test record: {subject}\n']
             lines += [f'{k}: {v}\n' for k, v in side_values[side].items() if v]
             lines += [f'{k}: true\n' for k, v in side_flags[side].items() if v]
+            if extra_lines:
+                lines += [line + '\n' for line in extra_lines]
             raw = ''.join(lines).encode()
             sid = request_id + '-' + str(side)
             url = 'https://records.example.org/' + sid

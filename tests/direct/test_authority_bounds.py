@@ -72,7 +72,9 @@ def test_deadline_uses_transaction_time(harness):
     h.make()
     h.vm.warp('2034-01-01T00:00:00Z')
     h.signet.evaluate('r1')
-    assert h.signet.get_relation('r1')['status'] == 'TIMEOUT'
+    h.world.run_next('confirm_relation')
+    assert h.signet.get_relation('r1')['status'] == 'FINALIZED'
+    assert h.signet.get_relation('r1')['decision_vector']['unresolved'] == ['DEADLINE_EXPIRED']
 
 
 def test_paginated_revision_indexes(harness):

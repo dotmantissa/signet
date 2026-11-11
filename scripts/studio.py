@@ -40,6 +40,43 @@ class Studio:
             time.sleep(5)
         raise TimeoutError('Journaled operation remains pending: ' + label + ' ' + str(tx))
 
+    def queue(self, label, address, method, args=None):
+        operation_path = self.root / (label + '.operation.json')
+        args = args or []
+        if operation_path.exists():
+            operation = json.loads(operation_path.read_text())
+            if operation['address'] != address or operation['method'] != method or operation['args'] != args:
+                raise ValueError('Conflicting journal operation: ' + label)
+            return operation['transaction_hash']
+        tx = self.client.write_contract(address, method, args=args)
+        atomic_json(operation_path, {'network':'studionet','chain_id':61999,'sender':self.account.address,'address':address,'method':method,'args':args,'transaction_hash':tx})
+        print(label, 'SUBMITTED', tx, flush=True)
+        time.sleep(8)
+        return tx
+
+    def finish_batch(self, operations, seconds=600):
+        pending = list(operations)
+        results = {}
+        end = time.monotonic() + seconds
+        while pending and time.monotonic() < end:
+            next_pending = []
+            for label, tx in pending:
+                path = self.root / (label + '.receipt.json')
+                result = json.loads(path.read_text()) if path.exists() else self.client.get_transaction(tx)
+                if str(result.get('status')) in ['7', 'FINALIZED', 'TransactionStatus.FINALIZED']:
+                    atomic_json(path,result)
+                    if not tx_execution_succeeded(result):
+                        raise RuntimeError(label + ' finalized with execution error: ' + json.dumps(result.get('consensus_data',{}).get('leader_receipt',[{}])[0].get('genvm_result',{}),default=str)[:3000])
+                    results[label] = result
+                    print(label, 'FINALIZED SUCCESS', flush=True)
+                else:
+                    next_pending.append((label,tx))
+                time.sleep(1)
+            pending=next_pending
+            if pending: time.sleep(15)
+        if pending: raise TimeoutError('Journaled pending operations: '+str(pending))
+        return results
+
     def transaction(self, label, address, method, args=None, require_success=True):
         operation_path = self.root / (label + '.operation.json')
         args = args or []

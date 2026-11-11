@@ -201,3 +201,11 @@ def test_reconcile_lost_ack_by_operation(harness):
     h.world.run_next('receive_certificate')
     h.signet.reconcile_delivery(str(h.consumer_address),'r1')
     assert h.signet.get_delivery(str(h.consumer_address),'r1')['status'] == 'ACKNOWLEDGED'
+
+
+def test_new_distinct_revokes_old_same_consequence(harness):
+    h=harness
+    h.make();h.evaluate();h.deliver()
+    h.vm.clear_mocks();h.make('contrary',prepare=False,changes={'period':'2026-11'});h.evaluate('contrary')
+    assert h.signet.get_relation('r1')['active'] is False
+    assert h.consumer.get_operation('r1')['effective_status']=='QUARANTINED'

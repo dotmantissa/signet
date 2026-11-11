@@ -270,12 +270,14 @@ class Signet(gl.Contract):
         self.consumers[address] = ConfigRecord(payload, True)
         self._journal('consumer', address.as_hex)
 
-    def _active(self, r: RelationRecord) -> bool:
+    def _active(self, r: RelationRecord, check_conflicts: bool = True) -> bool:
         if r.status in ['QUARANTINED', 'SUPERSEDED', 'TIMEOUT'] or r.superseded_by:
             return False
         e = json.loads(r.envelope)
         pk = e['policy_id'] + ':' + str(e['policy_revision'])
         if pk not in self.policies or not self.policies[pk].active:
+            return False
+        if check_conflicts and r.result and json.loads(r.result).get('relation') == 'SAME' and self.nonmerge_edges.get(key_pair(pk, e['subject_id'], e['right_subject_id']), False):
             return False
         if Address(e['consumer']) not in self.consumers or not self.consumers[Address(e['consumer'])].active:
             return False
@@ -515,6 +517,15 @@ SCHEMA=''' + canon(schema) + '\nPOLICY=' + canon(policy) + '\nUNTRUSTED_SOURCE_P
         except Exception:
             return False
 
+    def _unresolved_result(self, r: RelationRecord, reason: str, availability: str = 'UNAVAILABLE') -> dict:
+        e = json.loads(r.envelope)
+        policy = json.loads(self.policies[e['policy_id'] + ':' + str(e['policy_revision'])].payload)
+        schema = json.loads(self.schemas[policy['schema_id']].payload)
+        witnesses = {'fields:' + field: [] for field in schema['mandatory_discriminators']}
+        witnesses.update({'flags:' + field: [] for field in FLAGS})
+        flags = {field: field == 'scope_ambiguous' for field in FLAGS}
+        return {'availability': availability, 'relation': 'UNKNOWN', 'reason': reason, 'discriminators': [{field: '' for field in schema['mandatory_discriminators']} for _ in range(2)], 'scope_flags': [flags, flags], 'scope': policy['scope'], 'controlling_rule_ids': ['R1_COMPLETE', 'R7_REVISION'] if availability == 'CHANGED' else ['R1_COMPLETE'], 'witnesses': [{field: '' for field in witnesses} for _ in range(2)], 'adequate_witness_sets': [witnesses, witnesses], 'coverage': False, 'unresolved': [reason], 'different_fields': []}
+
     @gl.public.write
     def evaluate(self, request_id: str) -> None:
         require(request_id in self.relations, 'unknown request')
@@ -526,13 +537,14 @@ SCHEMA=''' + canon(schema) + '\nPOLICY=' + canon(policy) + '\nUNTRUSTED_SOURCE_P
         require(r.status in ['LOCKED', 'UNRESOLVED', 'EVALUATING'], 'request terminal')
         require(self._active(r), 'stale or quarantined evidence')
         if now_seconds() > e['deadline']:
-            r.status = 'TIMEOUT'
-            r.result = canon({'availability': 'UNAVAILABLE', 'relation': 'UNKNOWN', 'unresolved': ['DEADLINE_EXPIRED']})
+            r.status = 'ASSESSED'
+            r.result = canon(self._unresolved_result(r, 'DEADLINE_EXPIRED'))
+            gl.get_contract_at(gl.message.contract_address).emit(on='finalized').confirm_relation(request_id)
             self._journal('timeout', request_id)
             return
         if int(r.attempts) >= 3:
             r.status = 'ASSESSED'
-            r.result = canon({'availability': 'UNAVAILABLE', 'relation': 'UNKNOWN', 'unresolved': ['RETRY_EXHAUSTED']})
+            r.result = canon(self._unresolved_result(r, 'RETRY_EXHAUSTED'))
             gl.get_contract_at(gl.message.contract_address).emit(on='finalized').confirm_relation(request_id)
             self._journal('retry-exhausted', request_id)
             return
@@ -551,8 +563,9 @@ SCHEMA=''' + canon(schema) + '\nPOLICY=' + canon(policy) + '\nUNTRUSTED_SOURCE_P
         require(self._active(r), 'stale or quarantined evidence')
         e = json.loads(r.envelope)
         if now_seconds() > e['deadline']:
-            r.status = 'TIMEOUT'
-            r.result = canon({'availability': 'UNAVAILABLE', 'relation': 'UNKNOWN', 'unresolved': ['DEADLINE_EXPIRED']})
+            r.status = 'ASSESSED'
+            r.result = canon(self._unresolved_result(r, 'DEADLINE_EXPIRED'))
+            gl.get_contract_at(gl.message.contract_address).emit(on='finalized').confirm_relation(request_id)
             self._journal('timeout', request_id)
             return
         pk = e['policy_id'] + ':' + str(e['policy_revision'])
@@ -565,7 +578,7 @@ SCHEMA=''' + canon(schema) + '\nPOLICY=' + canon(policy) + '\nUNTRUSTED_SOURCE_P
             return self._agrees(leader, derive)
         result = dict(gl.vm.run_nondet_unsafe(derive, validate))
         if result['availability'] != 'AVAILABLE':
-            result['relation'] = 'UNKNOWN'
+            result = self._unresolved_result(r, result['unresolved'][0], result['availability'])
         r.result = canon(result)
         if result['availability'] == 'AVAILABLE' or result['availability'] == 'CHANGED' or int(r.attempts) == 3:
             r.status = 'ASSESSED'
@@ -595,7 +608,7 @@ SCHEMA=''' + canon(schema) + '\nPOLICY=' + canon(policy) + '\nUNTRUSTED_SOURCE_P
             self._split(e['right_subject_id'], request_id)
         if e['supersedes']:
             prev = self.relations[e['supersedes']]
-            if result['relation'] == 'SAME' and self._active(r) and self.pair_distinct.get(pair, '') == e['supersedes']:
+            if result['relation'] == 'SAME' and self._active(r, False) and self.pair_distinct.get(pair, '') == e['supersedes']:
                 self.nonmerge_edges[pair] = False
             prev.status = 'SUPERSEDED'
             prev.superseded_by = request_id
@@ -627,7 +640,7 @@ SCHEMA=''' + canon(schema) + '\nPOLICY=' + canon(policy) + '\nUNTRUSTED_SOURCE_P
         e, decision = json.loads(r.envelope), json.loads(r.result or '{}')
         require(gl.message.sender_address in [Address(e['owner']), self.subject_principals[e['subject_id']], self.subject_principals[e['right_subject_id']]], 'alias permission required')
         require(subject_id in [e['subject_id'], e['right_subject_id']], 'subject not covered')
-        require(r.status == 'FINALIZED' and self._active(r) and decision.get('relation') == 'SAME', 'finalized active SAME witness required')
+        require(r.status == 'FINALIZED' and self._active(r, False) and decision.get('relation') == 'SAME', 'finalized active SAME witness required')
         left, right = self._members(e['subject_id']), self._members(e['right_subject_id'])
         if set(left) == set(right):
             if not self.get_alias(e['subject_id'])['active']:
