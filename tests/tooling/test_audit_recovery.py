@@ -150,3 +150,15 @@ def test_studio_transport_uses_bounded_requests_and_propagates_rpc_errors(monkey
     assert post.call_args.kwargs['headers']['Origin'] == 'https://studio.genlayer.com'
     provider._raise_on_error.side_effect = studio.GenLayerError('Rate limit exceeded')
     with pytest.raises(studio.GenLayerError, match='Rate limit'): provider.make_request('test', [])
+
+
+@pytest.mark.parametrize('method', ['eth_getTransactionByHash', 'eth_sendRawTransaction'])
+def test_transport_timeout_retries_the_identical_request(method, monkeypatch):
+    monkeypatch.setattr(studio.time, 'monotonic', lambda: 100)
+    monkeypatch.setattr(studio.time, 'sleep', Mock())
+    monkeypatch.setattr(studio, '_RPC_LAST', 0)
+    provider = SimpleNamespace(make_request=Mock(side_effect=[studio.GenLayerError('Studio transport failed: Read timed out'), {'result': 'ok'}]))
+    original = provider.make_request
+    studio.paced_provider(provider)
+    assert provider.make_request(method, ['same-signed-bytes-or-hash']) == {'result': 'ok'}
+    assert original.call_args_list[0] == original.call_args_list[1]

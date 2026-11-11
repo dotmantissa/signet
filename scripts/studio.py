@@ -44,9 +44,14 @@ def paced_provider(provider):
             try:
                 return original(method, params)
             except GenLayerError as error:
-                if not any(code in str(error).lower() for code in ['rate limit', '429', 'code=-32029', 'code=-32429']) or retry == 3: raise
-                print("Studio RPC rate window; pausing 45 seconds", flush=True)
-                time.sleep(45)
+                message = str(error).lower()
+                rate_limited = any(code in message for code in ['rate limit', '429', 'code=-32029', 'code=-32429'])
+                transient = any(code in message for code in ['timed out', 'connection aborted', 'connection reset', '502', '503', '504'])
+                if retry == 3 or not (rate_limited or transient):
+                    raise
+                delay = 45 if rate_limited else min(3 * (2 ** retry), 12)
+                print('Studio RPC retry; reusing identical request after', delay, 'seconds', flush=True)
+                time.sleep(delay)
         raise RuntimeError("unreachable")
     provider.make_request = request
 
