@@ -88,6 +88,7 @@ class Studio:
         self.root.mkdir(parents=True, exist_ok=True)
 
     def wait(self, tx, label, seconds=600, require_success=True):
+        self._operation_path(label)
         cached_path = self.root / (label + '.receipt.json')
         if cached_path.exists():
             cached = json.loads(cached_path.read_text())
@@ -220,6 +221,7 @@ class Studio:
         while pending and time.monotonic() < end:
             next_pending = []
             for label, tx in pending:
+                self._operation_path(label)
                 path = self.root / (label + '.receipt.json')
                 result = json.loads(path.read_text()) if path.exists() else None
                 if result is not None and result.get('hash') != tx:

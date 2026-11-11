@@ -162,3 +162,10 @@ def test_transport_timeout_retries_the_identical_request(method, monkeypatch):
     studio.paced_provider(provider)
     assert provider.make_request(method, ['same-signed-bytes-or-hash']) == {'result': 'ok'}
     assert original.call_args_list[0] == original.call_args_list[1]
+
+
+def test_receipt_labels_cannot_escape_journal(tmp_path):
+    s, _ = make_session(tmp_path)
+    del s.wait
+    with pytest.raises(ValueError, match='Invalid journal'): s.wait('tx', '../escape')
+    with pytest.raises(ValueError, match='Invalid journal'): s.finish_batch([('../escape', 'tx')])
