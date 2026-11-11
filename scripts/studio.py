@@ -7,6 +7,28 @@ from genlayer_py import create_client
 from genlayer_py.chains import studionet
 from genlayer_py.types import TransactionStatus
 from gltest.assertions import tx_execution_succeeded
+from genlayer_py.exceptions import GenLayerError
+
+_RPC_LAST = 0.0
+
+
+def paced_provider(provider):
+    original = provider.make_request
+    def request(method, params):
+        global _RPC_LAST
+        for retry in range(4):
+            remaining = 3.0 - (time.monotonic() - _RPC_LAST)
+            if remaining > 0: time.sleep(remaining)
+            _RPC_LAST = time.monotonic()
+            try:
+                return original(method, params)
+            except GenLayerError as error:
+                if "Rate limit" not in str(error) or retry == 3: raise
+                print("Studio RPC rate window; pausing 45 seconds", flush=True)
+                time.sleep(45)
+        raise RuntimeError("unreachable")
+    provider.make_request = request
+
 
 
 def atomic_json(path, value):
@@ -21,10 +43,20 @@ class Studio:
     def __init__(self, private_key, evidence_dir='evidence/studio'):
         self.account = Account.from_key(private_key)
         self.client = create_client(chain=studionet, account=self.account)
+        paced_provider(self.client.provider)
         self.root = Path(evidence_dir)
         self.root.mkdir(parents=True, exist_ok=True)
 
     def wait(self, tx, label, seconds=600, require_success=True):
+        cached_path = self.root / (label + '.receipt.json')
+        if cached_path.exists():
+            cached = json.loads(cached_path.read_text())
+            if cached.get('hash') != tx:
+                raise ValueError(label + ': cached receipt belongs to another transaction')
+            if str(cached.get('status')) in ['7', 'FINALIZED', 'TransactionStatus.FINALIZED']:
+                if require_success and not tx_execution_succeeded(cached):
+                    raise RuntimeError(label + ': cached finalized execution failed')
+                return cached
         end = time.monotonic() + seconds
         while time.monotonic() < end:
             result = self.client.get_transaction(tx)
@@ -62,7 +94,11 @@ class Studio:
             next_pending = []
             for label, tx in pending:
                 path = self.root / (label + '.receipt.json')
-                result = json.loads(path.read_text()) if path.exists() else self.client.get_transaction(tx)
+                result = json.loads(path.read_text()) if path.exists() else None
+                if result is not None and result.get('hash') != tx:
+                    raise ValueError(label + ': cached receipt belongs to another transaction')
+                if result is None or str(result.get('status')) not in ['7', 'FINALIZED', 'TransactionStatus.FINALIZED']:
+                    result = self.client.get_transaction(tx)
                 if str(result.get('status')) in ['7', 'FINALIZED', 'TransactionStatus.FINALIZED']:
                     atomic_json(path,result)
                     if not tx_execution_succeeded(result):
