@@ -17,6 +17,7 @@ MAX_SPANS = 64
 MAX_FIELDS = 8
 MAX_CLUSTER = 4
 MAX_CROSS_PAIRS = 16
+MAX_DISTINCT_WITNESSES = 16
 MAX_HISTORY = 100000
 MAX_U64 = 18446744073709551615
 MAX_U256 = (1 << 256) - 1
@@ -148,6 +149,9 @@ class Signet(gl.Contract):
     last_generation: TreeMap[str, u64]
     subject_principals: TreeMap[str, Address]
     nonmerge_edges: TreeMap[str, bool]
+    nonmerge_history: TreeMap[str, DynArray[str]]
+    nonmerge_active: TreeMap[str, bool]
+    nonmerge_counts: TreeMap[str, u64]
 
     def __init__(self):
         self.owner = gl.message.sender_address
@@ -277,7 +281,7 @@ class Signet(gl.Contract):
         pk = e['policy_id'] + ':' + str(e['policy_revision'])
         if pk not in self.policies or not self.policies[pk].active:
             return False
-        if check_conflicts and r.result and json.loads(r.result).get('relation') == 'SAME' and self.nonmerge_edges.get(key_pair(pk, e['subject_id'], e['right_subject_id']), False):
+        if check_conflicts and r.result and json.loads(r.result).get('relation') == 'SAME' and self.nonmerge_edges.get(key_pair('', e['subject_id'], e['right_subject_id']), False):
             return False
         if Address(e['consumer']) not in self.consumers or not self.consumers[Address(e['consumer'])].active:
             return False
@@ -347,6 +351,10 @@ class Signet(gl.Contract):
         if e['supersedes']:
             require(e['supersedes'] in self.relations, 'unknown predecessor')
             prev = json.loads(self.relations[e['supersedes']].envelope)
+            predecessor_policy = json.loads(self.policies[prev['policy_id'] + ':' + str(prev['policy_revision'])].payload)
+            predecessor_schema = json.loads(self.schemas[predecessor_policy['schema_id']].payload)
+            current_schema = json.loads(self.schemas[schema_id].payload)
+            require(predecessor_policy['scope'] == p['scope'] and predecessor_schema['kind'] == current_schema['kind'] and predecessor_schema['mandatory_discriminators'] == current_schema['mandatory_discriminators'], 'incompatible successor schema or scope; rebind new deployment')
             require(prev['owner'] == e['owner'] and prev['consumer'].lower() == e['consumer'].lower() and prev['subject_id'] == e['subject_id'] and prev['right_subject_id'] == e['right_subject_id'] and prev['policy_id'] == e['policy_id'], 'successor binding mismatch')
         self.last_generation[gk] = u64(e['generation'])
         self.relations[request_id] = RelationRecord(locked, committed, '', 'LOCKED', u8(0), '', '')
@@ -599,17 +607,25 @@ SCHEMA=''' + canon(schema) + '\nPOLICY=' + canon(policy) + '\nUNTRUSTED_SOURCE_P
         e, result = json.loads(r.envelope), json.loads(r.result)
         pk = e['policy_id'] + ':' + str(e['policy_revision'])
         pair = key_pair(pk, e['subject_id'], e['right_subject_id'])
+        edge = key_pair('', e['subject_id'], e['right_subject_id'])
         if result['relation'] == 'SAME':
             self.pair_same[pair] = request_id
         elif result['relation'] == 'DISTINCT':
             self.pair_distinct[pair] = request_id
-            self.nonmerge_edges[pair] = True
+            if edge not in self.nonmerge_history:
+                self.nonmerge_history[edge] = []
+            self.nonmerge_history[edge].append(request_id)
+            self.nonmerge_active[request_id] = True
+            self.nonmerge_counts[edge] = u64(int(self.nonmerge_counts.get(edge, u64(0))) + 1)
+            self.nonmerge_edges[edge] = True
             self._split(e['subject_id'], request_id)
             self._split(e['right_subject_id'], request_id)
         if e['supersedes']:
             prev = self.relations[e['supersedes']]
-            if result['relation'] == 'SAME' and self._active(r, False) and self.pair_distinct.get(pair, '') == e['supersedes']:
-                self.nonmerge_edges[pair] = False
+            if result['relation'] == 'SAME' and self._active(r, False) and self.nonmerge_active.get(e['supersedes'], False):
+                self.nonmerge_active[e['supersedes']] = False
+                self.nonmerge_counts[edge] = u64(int(self.nonmerge_counts[edge]) - 1)
+                self.nonmerge_edges[edge] = int(self.nonmerge_counts[edge]) > 0
             prev.status = 'SUPERSEDED'
             prev.superseded_by = request_id
             self._split(e['subject_id'], request_id)
@@ -658,9 +674,14 @@ SCHEMA=''' + canon(schema) + '\nPOLICY=' + canon(policy) + '\nUNTRUSTED_SOURCE_P
         for a in left:
             for b in right:
                 pair = key_pair(pk, a, b)
-                distinct = self.pair_distinct.get(pair, '')
-                if self.nonmerge_edges.get(pair, False):
-                    return 'UNRESOLVED_DISTINCT_EDGE'
+                edge = key_pair('', a, b)
+                negative_witnesses = self.nonmerge_history.get(edge)
+                if negative_witnesses is not None:
+                    if len(negative_witnesses) > MAX_DISTINCT_WITNESSES:
+                        return 'UNRESOLVED_DISTINCT_BOUND'
+                    for witness_id in negative_witnesses:
+                        if self.nonmerge_active.get(witness_id, False):
+                            return 'UNRESOLVED_DISTINCT_EDGE'
                 same = self.pair_same.get(pair, '')
                 if not same:
                     return 'UNRESOLVED_CROSS_WITNESS'
@@ -729,8 +750,9 @@ SCHEMA=''' + canon(schema) + '\nPOLICY=' + canon(policy) + '\nUNTRUSTED_SOURCE_P
             for b in members[i + 1:]:
                 pair = key_pair(c.policy_key, a, b)
                 same = self.pair_same.get(pair, '')
-                distinct = self.pair_distinct.get(pair, '')
-                if not same or not self._active(self.relations[same]) or self.nonmerge_edges.get(pair, False):
+                edge = key_pair('', a, b)
+                negatives = self.nonmerge_history.get(edge)
+                if not same or not self._active(self.relations[same]) or self.nonmerge_edges.get(edge, False) or (negatives is not None and len(negatives) > MAX_DISTINCT_WITNESSES):
                     active = False
         return {'historical_id': subject_id, 'canonical_id': members[0] if active else subject_id, 'cluster_id': cid, 'active': active, 'members': members, 'superseded_by': c.superseded_by}
 
@@ -855,4 +877,4 @@ SCHEMA=''' + canon(schema) + '\nPOLICY=' + canon(policy) + '\nUNTRUSTED_SOURCE_P
 
     @gl.public.view
     def limits(self) -> dict:
-        return {'source_count': MAX_SOURCES, 'source_bytes': MAX_SOURCE_BYTES, 'packet_bytes': MAX_PACKET_BYTES, 'complete_context_bytes': MAX_CONTEXT_BYTES, 'prompt_bytes_and_conservative_input_token_bound': MAX_PROMPT_BYTES, 'model_output_bytes': MAX_MODEL_OUTPUT_BYTES, 'model_calls_per_participant': 1, 'discriminators': MAX_FIELDS, 'cluster_members': MAX_CLUSTER, 'cross_pairs': MAX_CROSS_PAIRS, 'retries': 3, 'history_capacity': MAX_HISTORY}
+        return {'source_count': MAX_SOURCES, 'source_bytes': MAX_SOURCE_BYTES, 'packet_bytes': MAX_PACKET_BYTES, 'complete_context_bytes': MAX_CONTEXT_BYTES, 'prompt_bytes_and_conservative_input_token_bound': MAX_PROMPT_BYTES, 'model_output_bytes': MAX_MODEL_OUTPUT_BYTES, 'model_calls_per_participant': 1, 'discriminators': MAX_FIELDS, 'cluster_members': MAX_CLUSTER, 'cross_pairs': MAX_CROSS_PAIRS, 'distinct_witnesses_per_pair': MAX_DISTINCT_WITNESSES, 'retries': 3, 'history_capacity': MAX_HISTORY}

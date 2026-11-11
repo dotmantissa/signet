@@ -33,6 +33,7 @@ class Harness:
         self.resolver_address = self.signet.address
         self.schema = kind.lower() + ':v1'
         self.policy = kind.lower()
+        self.policy_revision = 1
         self.signet.register_identity_schema(self.schema, FIELDS[kind])
         self.signet.register_policy(self.policy, 1, self.schema, kind.lower())
         contract = 'incident' if kind == 'INCIDENT' else 'receivable'
@@ -84,7 +85,7 @@ class Harness:
         else:
             self.consumer.register_economic_id(right_id, 1000000)
             consequence = {'action': 'RESERVE_EXISTING', 'economic_id': right_id, 'amount_minor': 12500, 'reservation_owner': str(self.alice).lower()}
-        e = request_envelope(request_id, str(self.alice), [str(self.alice)], self.policy, 1, manifests[0], manifests[1], str(self.consumer_address), consequence, gen, 2000000000, supersedes)
+        e = request_envelope(request_id, str(self.alice), [str(self.alice)], self.policy, self.policy_revision, manifests[0], manifests[1], str(self.consumer_address), consequence, gen, 2000000000, supersedes)
         if prepare:
             if self.kind == 'INCIDENT':
                 self.consumer.propose_link(request_id, canonical(e))

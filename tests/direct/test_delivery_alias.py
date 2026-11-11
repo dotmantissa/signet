@@ -209,3 +209,35 @@ def test_new_distinct_revokes_old_same_consequence(harness):
     h.vm.clear_mocks();h.make('contrary',prepare=False,changes={'period':'2026-11'});h.evaluate('contrary')
     assert h.signet.get_relation('r1')['active'] is False
     assert h.consumer.get_operation('r1')['effective_status']=='QUARANTINED'
+
+
+def test_correcting_one_distinct_cannot_erase_another(harness):
+    h=harness
+    h.make('d1',prepare=False,changes={'period':'2026-11'});h.evaluate('d1')
+    h.vm.clear_mocks();h.make('d2',prepare=False,changes={'period':'2026-12'});h.evaluate('d2')
+    h.vm.clear_mocks();h.make('s1',prepare=False,supersedes='d2');h.evaluate('s1')
+    assert h.signet.register_alias('left','s1')=='UNRESOLVED_DISTINCT_EDGE'
+    assert h.signet.get_relation('s1')['active'] is False
+
+
+def test_distinct_history_bound_returns_unresolved(harness):
+    h=harness
+    for i in range(17):
+        h.vm.clear_mocks()
+        rid='d'+str(i)
+        h.make(rid,prepare=False,changes={'period':'2027-'+str(i+1)});h.evaluate(rid)
+    h.vm.clear_mocks();h.make('same',prepare=False);h.evaluate('same')
+    assert h.signet.register_alias('left','same')=='UNRESOLVED_DISTINCT_BOUND'
+
+
+def test_policy_revision_cannot_bypass_known_distinct(harness):
+    h=harness
+    h.make('old',prepare=False,changes={'period':'2026-11'});h.evaluate('old')
+    h.signet.register_policy(h.policy,2,h.schema,'obligation')
+    h.consumer=h.world.deploy('contracts/receivable.py',str(h.resolver_address),h.policy,2,h.schema)
+    h.consumer_address=h.consumer.address
+    with h.vm.prank(h.consumer_address):
+        h.signet.register_consumer(str(h.consumer_address),canonical({'policy_id':h.policy,'policy_revision':2,'schema_id':h.schema,'unresolved_consequence':'KEEP_HOLD'}))
+    h.policy_revision=2
+    h.vm.clear_mocks();h.make('new',prepare=False);h.evaluate('new')
+    assert h.signet.register_alias('left','new')=='UNRESOLVED_DISTINCT_EDGE'

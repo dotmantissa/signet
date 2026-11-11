@@ -9,7 +9,7 @@ from scripts.run_studio import credentials, revise_gist
 from scripts.envelopes import canonical, source_manifest, request_envelope
 from scripts.studio import Studio, atomic_json
 
-ROOT = 'evidence/studio-release'
+ROOT = 'evidence/studio-final'
 SCHEMAS = {'OBLIGATION':['payer_id','payee_id','consideration','period','amount_minor','currency'],'INCIDENT':['event_date','location_id','event_kind','occurrence_id'],'ORGANIZATION':['official_id','jurisdiction']}
 
 
@@ -30,10 +30,17 @@ def run():
     queue_wave([(owner,'policy-'+kind.lower(),resolver,'register_policy',[kind.lower(),1,kind.lower()+':v1',kind.lower()]) for kind in SCHEMAS])
     receivers={}
     # Separate account keys own the consumer contracts; all three deployments are real.
+    deployments=[]
     for kind in SCHEMAS:
         role='incident' if kind=='INCIDENT' else 'receivable'
         path='contracts/incident.py' if kind=='INCIDENT' else 'contracts/receivable.py'
-        receivers[kind]=sessions[role].deploy('deploy-consumer-'+kind.lower(),path,[resolver,kind.lower(),1,kind.lower()+':v1'])
+        label='deploy-consumer-'+kind.lower()
+        tx=sessions[role].queue_deploy(label,path,[resolver,kind.lower(),1,kind.lower()+':v1'])
+        deployments.append((kind,sessions[role],label,tx))
+    for session in {id(s):s for _,s,_,_ in deployments}.values():
+        results=session.finish_batch([(label,tx) for _,s,label,tx in deployments if s is session])
+        for kind,s,label,tx in deployments:
+            if s is session: receivers[kind]=results[label]['data']['contract_address']
     queue_wave([(sessions['incident' if k=='INCIDENT' else 'receivable'],'approve-'+k.lower(),receiver,'approve_configuration',[]) for k,receiver in receivers.items()])
     corpus=json.loads(Path('evidence/public-sources.json').read_text())
     queue_wave([(owner,'authority-'+role,resolver,'register_authority',[role,sessions[role].account.address,corpus['url_prefix'],corpus['authority_evidence_url']]) for role in sessions])

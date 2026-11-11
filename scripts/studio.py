@@ -91,6 +91,23 @@ class Studio:
             print(label, 'SUBMITTED', tx, flush=True)
         return self.wait(tx,label,require_success=require_success)
 
+    def queue_deploy(self, label, path, args=None):
+        import hashlib
+        args = args or []
+        code = Path(path).read_text()
+        code_hash = hashlib.sha256(code.encode()).hexdigest()
+        operation_path = self.root / (label + '.operation.json')
+        if operation_path.exists():
+            operation=json.loads(operation_path.read_text())
+            if operation['code_sha256'] != code_hash or operation['args'] != args:
+                raise ValueError('Deployment source differs from journal: '+label)
+            return operation['transaction_hash']
+        tx=self.client.deploy_contract(code,args=args)
+        atomic_json(operation_path,{'network':'studionet','chain_id':61999,'sender':self.account.address,'source_file':str(path),'code_sha256':code_hash,'args':args,'transaction_hash':tx})
+        print(label,'SUBMITTED',tx,flush=True)
+        time.sleep(8)
+        return tx
+
     def deploy(self, label, path, args=None):
         operation_path = self.root / (label + '.operation.json')
         code = Path(path).read_text()

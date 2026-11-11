@@ -54,7 +54,8 @@ class World:
         self.vm._storage = InmemManager()
         contract = self.deploy_raw(path, *args)
         from genlayer import Address
-        address = Address(self.vm._contract_address)
+        import hashlib
+        address = Address(hashlib.sha256((path + str(len(self.contracts))).encode()).digest()[:20])
         bound = BoundContract(self, contract, address, self.vm._storage)
         self.contracts[str(address).lower()] = bound
         return bound
