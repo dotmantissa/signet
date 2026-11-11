@@ -1,0 +1,98 @@
+"""Studio transaction journal. A receipt is successful only with successful execution."""
+import json
+import time
+from pathlib import Path
+from eth_account import Account
+from genlayer_py import create_client
+from genlayer_py.chains import studionet
+from genlayer_py.types import TransactionStatus
+from gltest.assertions import tx_execution_succeeded
+
+
+def atomic_json(path, value):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + '.tmp')
+    temporary.write_text(json.dumps(value, indent=2, default=str) + '\n')
+    temporary.replace(path)
+
+
+class Studio:
+    def __init__(self, private_key, evidence_dir='evidence/studio'):
+        self.account = Account.from_key(private_key)
+        self.client = create_client(chain=studionet, account=self.account)
+        self.root = Path(evidence_dir)
+        self.root.mkdir(parents=True, exist_ok=True)
+
+    def wait(self, tx, label, seconds=600, require_success=True):
+        end = time.monotonic() + seconds
+        while time.monotonic() < end:
+            result = self.client.get_transaction(tx)
+            # Studio SDK represents FINALIZED as integer 7.
+            if str(result.get('status')) in ['7', 'FINALIZED', 'TransactionStatus.FINALIZED']:
+                atomic_json(self.root / (label + '.receipt.json'), result)
+                success = tx_execution_succeeded(result)
+                print(label, 'FINALIZED', 'SUCCESS' if success else 'EXECUTION_ERROR', flush=True)
+                if require_success and not success:
+                    leader = result.get('consensus_data', {}).get('leader_receipt', [{}])[0]
+                    raise RuntimeError(label + ': ' + json.dumps(leader.get('genvm_result', leader), default=str)[:4000])
+                return result
+            time.sleep(5)
+        raise TimeoutError('Journaled operation remains pending: ' + label + ' ' + str(tx))
+
+    def transaction(self, label, address, method, args=None, require_success=True):
+        operation_path = self.root / (label + '.operation.json')
+        args = args or []
+        if operation_path.exists():
+            operation = json.loads(operation_path.read_text())
+            if operation['address'] != address or operation['method'] != method or operation['args'] != args:
+                raise ValueError('Conflicting journal operation: ' + label)
+            tx = operation['transaction_hash']
+        else:
+            tx = self.client.write_contract(address, method, args=args)
+            atomic_json(operation_path, {'network':'studionet','chain_id':61999,'sender':self.account.address,'address':address,'method':method,'args':args,'transaction_hash':tx})
+            print(label, 'SUBMITTED', tx, flush=True)
+        return self.wait(tx,label,require_success=require_success)
+
+    def deploy(self, label, path, args=None):
+        operation_path = self.root / (label + '.operation.json')
+        code = Path(path).read_text()
+        import hashlib
+        code_hash = hashlib.sha256(code.encode()).hexdigest()
+        args = args or []
+        if operation_path.exists():
+            operation = json.loads(operation_path.read_text())
+            if operation['code_sha256'] != code_hash or operation['args'] != args:
+                raise ValueError('Deployment source differs from journal: ' + label)
+            tx = operation['transaction_hash']
+        else:
+            tx = self.client.deploy_contract(code, args=args)
+            atomic_json(operation_path, {'network':'studionet','chain_id':61999,'sender':self.account.address,'source_file':str(path),'code_sha256':code_hash,'args':args,'transaction_hash':tx})
+            print(label,'SUBMITTED',tx,flush=True)
+        receipt = self.wait(tx,label)
+        return receipt['data']['contract_address']
+
+    def read(self, address, method, args=None):
+        return self.client.read_contract(address,method,args=args or [])
+
+    def wait_relation(self, resolver, request_id, seconds=600):
+        end = time.monotonic() + seconds
+        while time.monotonic() < end:
+            result = self.read(resolver,'get_relation',[request_id])
+            if result['status'] in ['FINALIZED','UNRESOLVED','TIMEOUT','QUARANTINED','SUPERSEDED']:
+                atomic_json(self.root / (request_id + '.relation.json'), result)
+                print(request_id,'RELATION',result['status'],result['decision_vector'].get('relation'),flush=True)
+                return result
+            time.sleep(8)
+        raise TimeoutError('Assessment message did not reach a terminal application state: '+request_id)
+
+    def wait_delivery(self, resolver, consumer, operation_id, seconds=600):
+        end = time.monotonic() + seconds
+        while time.monotonic() < end:
+            result = self.read(resolver,'get_delivery',[consumer,operation_id])
+            if result['status'] == 'ACKNOWLEDGED':
+                atomic_json(self.root / (operation_id + '.delivery.json'), result)
+                print(operation_id,'DELIVERY_ACKNOWLEDGED',flush=True)
+                return result
+            time.sleep(8)
+        raise TimeoutError('Delivery still pending; reconcile by operation ID: '+operation_id)

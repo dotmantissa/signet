@@ -25,7 +25,7 @@ class RuntimeProbe(gl.Contract):
     @gl.public.write
     def confirm(self) -> None:
         if gl.message.sender_address != gl.message.contract_address:
-            raise gl.UserError('Only self')
+            raise gl.vm.UserError('Only self')
         self.finalized = True
 
     @gl.public.view
