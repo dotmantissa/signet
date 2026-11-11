@@ -85,16 +85,17 @@ class IncidentConsumer(gl.Contract):
         require(Address(e['consumer']) == gl.message.contract_address and e['policy_id'] == self.policy_id and e['policy_revision'] == int(self.policy_revision), 'consumer policy binding')
         require(e['consequence_digest'] == digest(consequence), 'consequence binding mismatch')
         require(type(e['generation']) is int and 1 <= e['generation'] <= MAX_U64, 'generation overflow')
-        require(type(e['deadline']) is int and now_seconds() <= e['deadline'] <= MAX_U64, 'deadline expired or overflow')
+        require(type(e['deadline']) is int and 0 <= e['deadline'] <= MAX_U64, 'deadline expired or overflow')
         if operation_id in self.operations:
             p = self.operations[operation_id]
             require(p.owner == gl.message.sender_address and p.envelope == canon(e) and p.consequence == canon(consequence), 'conflicting operation ID reuse')
             return False
+        require(now_seconds() <= e['deadline'], 'deadline expired or overflow')
+        require(gl.get_contract_at(self.resolver).view().is_subject_authorized(e['subject_id'], gl.message.sender_address.as_hex), 'subject authorization required')
         require(int(self.count) < MAX_OPERATIONS, 'operation capacity reached')
         require(e['generation'] > int(self.generations.get(e['subject_id'], u64(0))), 'stale generation')
         previous = self.subject_operations.get(e['subject_id'], '')
         if previous:
-            require(self.operations[previous].owner == gl.message.sender_address, 'subject belongs to another operation owner')
             require(self.operations[previous].status == 'RELEASED', 'release previous operation before successor')
         self.generations[e['subject_id']] = u64(e['generation'])
         self.subject_operations[e['subject_id']] = operation_id
@@ -125,7 +126,8 @@ class IncidentConsumer(gl.Contract):
         current = gl.get_contract_at(self.resolver).view().get_relation(e['request_id'])
         # Authenticated message proves delivery finality; view checks current revocation only.
         schema = gl.get_contract_at(self.resolver).view().get_configuration('schema', self.schema_id)
-        valid = schema['active'] and schema['payload']['kind'] == 'INCIDENT' and current['active'] and current['status'] == 'FINALIZED' and current['bindings'] == e and current['decision_vector'] == relation['decision_vector']
+        authorized = gl.get_contract_at(self.resolver).view().is_subject_authorized(e['subject_id'], pending.owner.as_hex)
+        valid = authorized and schema['active'] and schema['payload']['kind'] == 'INCIDENT' and current['active'] and current['status'] == 'FINALIZED' and canon(current['bindings']) == canon(e) and canon(current['decision_vector']) == canon(relation['decision_vector'])
         if pending.status == 'RELEASED' or e['generation'] != int(self.generations[e['subject_id']]):
             status = 'STALE'
         elif now_seconds() > e['deadline']:
@@ -143,6 +145,18 @@ class IncidentConsumer(gl.Contract):
         pending.acknowledgement = canon({'operation_id': op, 'payload_digest': pd, 'status': status, 'generation': e['generation']})
         gl.get_contract_at(self.resolver).emit(on='finalized').acknowledge(gl.message.contract_address.as_hex, op, pending.acknowledgement)
 
+    @gl.public.write
+    def recover_subject(self, subject_id: str) -> None:
+        principal = Address(gl.get_contract_at(self.resolver).view().get_subject_principal(subject_id))
+        require(gl.message.sender_address == principal, 'only subject principal may recover')
+        operation_id = self.subject_operations.get(subject_id, '')
+        require(bool(operation_id), 'no subject operation')
+        p = self.operations[operation_id]
+        require(p.owner != principal and not gl.get_contract_at(self.resolver).view().is_subject_authorized(subject_id, p.owner.as_hex), 'revoke previous operator before recovery')
+        if p.status == 'RELEASED':
+            return
+        p.status = 'RELEASED'
+
     @gl.public.view
     def get_acknowledgement(self, operation_id: str) -> str:
         if operation_id not in self.operations:
@@ -157,7 +171,8 @@ class IncidentConsumer(gl.Contract):
         effective = p.status
         if effective == 'PERMITTED':
             current = gl.get_contract_at(self.resolver).view().get_relation(e['request_id'])
-            if not current['active'] or current['status'] != 'FINALIZED':
+            authorized = gl.get_contract_at(self.resolver).view().is_subject_authorized(e['subject_id'], p.owner.as_hex)
+            if not authorized or not current['active'] or current['status'] != 'FINALIZED':
                 effective = 'QUARANTINED'
         return {'operation_id': operation_id, 'status': p.status, 'effective_status': effective, 'bindings': e, 'consequence': json.loads(p.consequence), 'owner': p.owner.as_hex, 'acknowledgement': p.acknowledgement, 'last_applied_generation': int(self.applied_generations.get(e['subject_id'], u64(0)))}
 

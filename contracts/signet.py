@@ -34,6 +34,16 @@ def canon(value) -> str:
     return json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
 
 
+def typed_equal(left, right) -> bool:
+    if type(left) is not type(right):
+        return False
+    if isinstance(left, dict):
+        return set(left) == set(right) and all(typed_equal(left[k], right[k]) for k in left)
+    if isinstance(left, list):
+        return len(left) == len(right) and all(typed_equal(a, b) for a, b in zip(left, right))
+    return left == right
+
+
 def digest(value) -> str:
     return hashlib.sha256(canon(value).encode('utf-8')).hexdigest()
 
@@ -68,7 +78,7 @@ def model_error(message: str):
 def normalized(field: str, raw) -> str:
     if not isinstance(raw, str) or len(raw.encode('utf-8')) > 256:
         model_error('invalid discriminator')
-    result = ' '.join(raw.strip().casefold().split())
+    result = raw.strip() if field.endswith('_id') else ' '.join(raw.strip().casefold().split())
     if field == 'amount_minor' and result:
         if not result.isascii() or not result.isdigit() or int(result) > MAX_U256:
             model_error('amount must be an unsigned fixed-point integer')
@@ -112,6 +122,7 @@ class ClusterRecord:
     fingerprint: str
     active: bool
     superseded_by: str
+    witnesses: str
 
 
 @allow_storage
@@ -153,6 +164,17 @@ class Signet(gl.Contract):
     nonmerge_active: TreeMap[str, bool]
     nonmerge_counts: TreeMap[str, u64]
 
+    source_bindings: TreeMap[str, str]
+    admitted_consumers: TreeMap[Address, bool]
+    approved_manifests: TreeMap[str, ConfigRecord]
+    subject_operators: TreeMap[str, bool]
+    negative_corrections: TreeMap[str, str]
+    confirmation_attempts: TreeMap[str, u8]
+    confirmation_times: TreeMap[str, u64]
+    dropped_events: u64
+    subject_documents: TreeMap[str, str]
+    manifest_heads: TreeMap[str, str]
+
     def __init__(self):
         self.owner = gl.message.sender_address
         self.assessors[self.owner] = True
@@ -162,7 +184,9 @@ class Signet(gl.Contract):
         require(gl.message.sender_address == self.owner, 'only owner')
 
     def _journal(self, kind: str, value: str) -> None:
-        require(int(self.event_count) < MAX_HISTORY, 'history capacity reached; rebind new deployment')
+        if int(self.event_count) >= MAX_HISTORY:
+            self.dropped_events = u64(min(MAX_U64, int(self.dropped_events) + 1))
+            return
         self.history.append(canon({'kind': kind, 'id': value, 'sequence': int(self.event_count)}))
         self.event_count = u64(int(self.event_count) + 1)
 
@@ -247,15 +271,101 @@ class Signet(gl.Contract):
         if sk in self.sources:
             require(self.sources[sk].payload == payload, 'conflicting source revision')
             return
+        binding = canon([a['principal'], s['subject_id'], s['scope']])
+        if s['source_id'] in self.source_bindings:
+            require(self.source_bindings[s['source_id']] == binding, 'immutable source principal subject and scope')
         head = int(self.source_heads.get(s['source_id'], u64(0)))
         require(s['revision'] == head + 1, 'source revisions must be sequential')
         if s['subject_id'] in self.subject_principals:
             require(self.subject_principals[s['subject_id']] == principal, 'subject belongs to another principal')
         else:
             self.subject_principals[s['subject_id']] = principal
+        dk = digest([s['subject_id'], s['scope']])
+        documents = json.loads(self.subject_documents.get(dk, '[]'))
+        if s['source_id'] not in documents:
+            require(len(documents) < MAX_SOURCES, 'subject document bound; withdraw obsolete source explicitly')
+            documents.append(s['source_id'])
+        self.subject_documents[dk] = canon(sorted(documents))
+        self.manifest_heads[dk] = ''
+        self.source_bindings[s['source_id']] = binding
         self.sources[sk] = SourceRecord(payload, u64(s['revision']), True)
         self.source_heads[s['source_id']] = u64(s['revision'])
         self._journal('source', sk)
+
+    @gl.public.write
+    def admit_consumer(self, consumer: str, allowed: bool) -> None:
+        self._owner()
+        address = Address(consumer)
+        self.admitted_consumers[address] = allowed
+        if not allowed and address in self.consumers:
+            self.consumers[address].active = False
+        self._journal('consumer-admission', address.as_hex)
+
+    @gl.public.write
+    def approve_record_manifest(self, scope: str, manifest_json: str) -> None:
+        """Principal certifies this exact revision packet contains all controlling evidence."""
+        ident(scope)
+        require(len(manifest_json.encode('utf-8')) <= 32768, 'manifest size limit')
+        m = json.loads(manifest_json)
+        require(isinstance(m, dict) and set(m) == {'subject_id', 'sources'}, 'record manifest schema')
+        ident(m['subject_id'])
+        require(m['subject_id'] in self.subject_principals and gl.message.sender_address == self.subject_principals[m['subject_id']], 'only subject principal may approve complete manifest')
+        require(isinstance(m['sources'], list) and 1 <= len(m['sources']) <= MAX_SOURCES, 'complete manifest source count')
+        require(len({v['source_id'] for v in m['sources']}) == len(m['sources']), 'duplicate source record')
+        for source in m['sources']:
+            sk = source['source_id'] + ':' + str(source['revision'])
+            require(sk in self.sources and self.sources[sk].active and self.sources[sk].payload == canon(source), 'unattested source')
+            require(source['scope'] == scope and source['subject_id'] == m['subject_id'], 'source scope or subject mismatch')
+            require(int(self.source_heads[source['source_id']]) == source['revision'], 'stale source revision')
+            require(self.authorities[source['authority_id']].active, 'inactive authority')
+        dk = digest([m['subject_id'], scope])
+        require(sorted(v['source_id'] for v in m['sources']) == json.loads(self.subject_documents.get(dk, '[]')), 'complete manifest must include all registered controlling documents')
+        mk = digest([scope, m])
+        if mk in self.approved_manifests:
+            require(self.approved_manifests[mk].active, 'manifest quarantined; publish a new revision')
+        self.manifest_heads[dk] = mk
+        self.approved_manifests[mk] = ConfigRecord(canon(m), True)
+        self._journal('complete-manifest', mk)
+
+    @gl.public.write
+    def withdraw_source(self, source_id: str, reason: str) -> None:
+        require(source_id in self.source_bindings, 'unknown source')
+        principal, subject, scope = json.loads(self.source_bindings[source_id])
+        require(gl.message.sender_address == Address(principal), 'only bound source principal may withdraw')
+        require(isinstance(reason, str) and 1 <= len(reason.encode('utf-8')) <= 512, 'withdrawal reason required')
+        dk = digest([subject, scope])
+        documents = json.loads(self.subject_documents[dk])
+        if source_id not in documents:
+            return
+        documents.remove(source_id)
+        self.subject_documents[dk] = canon(documents)
+        self.manifest_heads[dk] = ''
+        sk = source_id + ':' + str(int(self.source_heads[source_id]))
+        self.sources[sk].active = False
+        self._journal('source-withdrawal', canon([source_id, reason]))
+
+    @gl.public.view
+    def get_record_manifest(self, subject_id: str, scope: str) -> dict:
+        dk = digest([subject_id, scope])
+        documents = json.loads(self.subject_documents.get(dk, '[]'))
+        sources = [json.loads(self.sources[sid + ':' + str(int(self.source_heads[sid]))].payload) for sid in documents]
+        return {'manifest': {'subject_id': subject_id, 'sources': sources}, 'approval': self.manifest_heads.get(dk, '')}
+
+    @gl.public.write
+    def set_subject_operator(self, subject_id: str, account: str, allowed: bool) -> None:
+        require(subject_id in self.subject_principals and gl.message.sender_address == self.subject_principals[subject_id], 'only subject principal may authorize operator')
+        self.subject_operators[digest([subject_id, Address(account).as_hex.lower()])] = allowed
+        self._journal('subject-operator', subject_id)
+
+    @gl.public.view
+    def is_subject_authorized(self, subject_id: str, account: str) -> bool:
+        address = Address(account)
+        return subject_id in self.subject_principals and (self.subject_principals[subject_id] == address or self.subject_operators.get(digest([subject_id, address.as_hex.lower()]), False))
+
+    @gl.public.view
+    def get_subject_principal(self, subject_id: str) -> str:
+        require(subject_id in self.subject_principals, 'unknown subject')
+        return self.subject_principals[subject_id].as_hex
 
     @gl.public.write
     def register_consumer(self, consumer: str, configuration_json: str) -> None:
@@ -267,6 +377,7 @@ class Signet(gl.Contract):
         require(pk in self.policies and json.loads(self.policies[pk].payload)['schema_id'] == config['schema_id'], 'consumer policy binding')
         # Contract owns its configuration; an assessor cannot register it.
         require(gl.message.sender_address == address, 'consumer must approve its own configuration')
+        require(self.admitted_consumers.get(address, False), 'consumer admission required')
         payload = canon(config)
         if address in self.consumers:
             require(self.consumers[address].payload == payload and self.consumers[address].active, 'consumer immutable; rebind deployment')
@@ -281,11 +392,14 @@ class Signet(gl.Contract):
         pk = e['policy_id'] + ':' + str(e['policy_revision'])
         if pk not in self.policies or not self.policies[pk].active:
             return False
-        if check_conflicts and r.result and json.loads(r.result).get('relation') == 'SAME' and self.nonmerge_edges.get(key_pair('', e['subject_id'], e['right_subject_id']), False):
+        if check_conflicts and r.result and json.loads(r.result).get('relation') == 'SAME' and self._edge_veto(key_pair('', e['subject_id'], e['right_subject_id'])):
             return False
         if Address(e['consumer']) not in self.consumers or not self.consumers[Address(e['consumer'])].active:
             return False
         for m in json.loads(r.manifests):
+            mk = digest([json.loads(self.policies[pk].payload)['scope'], m])
+            if self.manifest_heads.get(digest([m['subject_id'], json.loads(self.policies[pk].payload)['scope']]), '') != mk or mk not in self.approved_manifests or not self.approved_manifests[mk].active:
+                return False
             for s in m['sources']:
                 sk = s['source_id'] + ':' + str(s['revision'])
                 if sk not in self.sources or not self.sources[sk].active or int(self.source_heads[s['source_id']]) != s['revision']:
@@ -329,6 +443,9 @@ class Signet(gl.Contract):
         require(len({s['source_id'] for s in sources}) == len(sources), 'duplicate source record')
         require(sum(s['byte_length'] for s in sources) <= MAX_PACKET_BYTES, 'packet byte limit')
         require(sum(s['byte_length'] for s in sources) <= MAX_CONTEXT_BYTES, 'complete task exceeds semantic context budget')
+        for m in manifests:
+            mk = digest([p['scope'], m])
+            require(self.manifest_heads.get(digest([m['subject_id'], p['scope']]), '') == mk and mk in self.approved_manifests and self.approved_manifests[mk].active, 'principal-approved complete revision manifest required')
         require(e['parties'] == sorted(set(principals)), 'principal parties binding')
         require(e['subject_digest'] == digest([e['subject_id'], e['right_subject_id']]), 'subject digest mismatch')
         require(e['source_manifest_digest'] == digest(manifests), 'manifest digest mismatch')
@@ -350,7 +467,10 @@ class Signet(gl.Contract):
         require(e['generation'] > int(self.last_generation.get(gk, u64(0))), 'stale generation')
         if e['supersedes']:
             require(e['supersedes'] in self.relations, 'unknown predecessor')
-            prev = json.loads(self.relations[e['supersedes']].envelope)
+            predecessor = self.relations[e['supersedes']]
+            require(not predecessor.superseded_by, 'predecessor already superseded; bind current successor')
+            prev = json.loads(predecessor.envelope)
+            require(e['generation'] > prev['generation'], 'successor generation must increase')
             predecessor_policy = json.loads(self.policies[prev['policy_id'] + ':' + str(prev['policy_revision'])].payload)
             predecessor_schema = json.loads(self.schemas[predecessor_policy['schema_id']].payload)
             current_schema = json.loads(self.schemas[schema_id].payload)
@@ -401,7 +521,7 @@ class Signet(gl.Contract):
                 for line in raw.splitlines(keepends=True):
                     end = offset + len(line)
                     if line.strip():
-                        sid = s['raw_hash'] + ':' + str(offset) + ':' + str(end)
+                        sid = str(side) + ':' + s['source_id'] + ':' + s['raw_hash'] + ':' + str(offset) + ':' + str(end)
                         spans[sid] = {'side': side, 'text': line.decode('utf-8'), 'source_hash': s['raw_hash'], 'start': offset, 'end': end}
                         mapped.append({'span_id': sid, 'text': line.decode('utf-8')})
                     offset = end
@@ -409,7 +529,7 @@ class Signet(gl.Contract):
                     return {'availability': 'OVERSIZED', 'unresolved': ['SOURCE_SPAN_LIMIT']}
                 for span in s['required_spans']:
                     piece = raw[span['start']:span['end']]
-                    sid = s['raw_hash'] + ':' + str(span['start']) + ':' + str(span['end'])
+                    sid = str(side) + ':' + s['source_id'] + ':' + s['raw_hash'] + ':' + str(span['start']) + ':' + str(span['end'])
                     if hashlib.sha256(piece).hexdigest() != span['span_hash'] or sid not in spans:
                         return {'availability': 'CHANGED', 'unresolved': ['SPAN_COMMITMENT_MISMATCH']}
                 packet.append({'source_id': s['source_id'], 'authority_id': s['authority_id'], 'scope': s['scope'], 'lines': mapped})
@@ -457,6 +577,15 @@ SCHEMA=''' + canon(schema) + '\nPOLICY=' + canon(policy) + '\nUNTRUSTED_SOURCE_P
             values.append(side_values)
             flags.append(side_flags)
             witness_sets.append(side_witnesses)
+        decision = self._decision(values, flags, schema, policy)
+        canonical_witnesses = [{k: (ws[0] if ws else '') for k, ws in side.items()} for side in witness_sets]
+        decision.update({'witnesses': canonical_witnesses, 'adequate_witness_sets': witness_sets})
+        return decision
+
+    def _decision(self, values: list, flags: list, schema: dict, policy: dict) -> dict:
+        require(type(values) is list and type(flags) is list and len(values) == len(flags) == 2, 'typed decision sides required')
+        require(all(type(v) is dict and set(v) == set(schema['mandatory_discriminators']) and all(type(x) is str for x in v.values()) for v in values), 'typed discriminators required')
+        require(all(type(f) is dict and set(f) == set(FLAGS) and all(type(x) is bool for x in f.values()) for f in flags), 'typed scope flags required')
         complete = all(all(v.values()) for v in values)
         ambiguous = any(f['scope_ambiguous'] for f in flags)
         exception = any(f['controlling_exception'] for f in flags)
@@ -479,8 +608,7 @@ SCHEMA=''' + canon(schema) + '\nPOLICY=' + canon(policy) + '\nUNTRUSTED_SOURCE_P
         elif complete:
             relation, reason = 'SAME', 'ALL_DISCRIMINATORS_MATCH'
             rules.extend(['R2_DISCRIMINATORS', 'R3_SCOPE'])
-        canonical_witnesses = [{k: (ws[0] if ws else '') for k, ws in side.items()} for side in witness_sets]
-        return {'availability': 'AVAILABLE', 'relation': relation, 'reason': reason, 'discriminators': values, 'scope_flags': flags, 'scope': policy['scope'], 'controlling_rule_ids': sorted(rules), 'witnesses': canonical_witnesses, 'adequate_witness_sets': witness_sets, 'coverage': complete, 'unresolved': [] if relation != 'UNKNOWN' else [reason], 'different_fields': differs}
+        return {'availability': 'AVAILABLE', 'relation': relation, 'reason': reason, 'discriminators': values, 'scope_flags': flags, 'scope': policy['scope'], 'controlling_rule_ids': sorted(rules), 'coverage': complete, 'unresolved': [] if relation != 'UNKNOWN' else [reason], 'different_fields': differs}
 
     def _agrees(self, leader, derive) -> bool:
         if isinstance(leader, gl.vm.VMError):
@@ -504,17 +632,21 @@ SCHEMA=''' + canon(schema) + '\nPOLICY=' + canon(policy) + '\nUNTRUSTED_SOURCE_P
                 return False
             # Prose is absent. Decision, normalized facts, rules and scope must match.
             for name in own:
-                if name not in ['witnesses', 'adequate_witness_sets'] and own[name] != candidate[name]:
+                if name not in ['witnesses', 'adequate_witness_sets'] and not typed_equal(own[name], candidate[name]):
                     return False
             if own['availability'] != 'AVAILABLE':
-                return own == candidate
+                return typed_equal(own, candidate)
+            if type(candidate['witnesses']) is not list or type(candidate['adequate_witness_sets']) is not list or len(candidate['witnesses']) != 2 or len(candidate['adequate_witness_sets']) != 2:
+                return False
             for side in range(2):
+                if type(candidate['witnesses'][side]) is not dict or type(candidate['adequate_witness_sets'][side]) is not dict or set(candidate['adequate_witness_sets'][side]) != set(own['adequate_witness_sets'][side]):
+                    return False
                 if set(candidate['witnesses'][side]) != set(own['witnesses'][side]):
                     return False
                 for field, witness in candidate['witnesses'][side].items():
                     adequate = own['adequate_witness_sets'][side][field]
                     proposed = candidate['adequate_witness_sets'][side][field]
-                    if not isinstance(proposed, list) or proposed != sorted(set(proposed)):
+                    if type(witness) is not str or type(proposed) is not list or any(type(w) is not str for w in proposed) or proposed != sorted(set(proposed)):
                         return False
                     if witness != (proposed[0] if proposed else ''):
                         return False
@@ -540,20 +672,23 @@ SCHEMA=''' + canon(schema) + '\nPOLICY=' + canon(policy) + '\nUNTRUSTED_SOURCE_P
         r = self.relations[request_id]
         e = json.loads(r.envelope)
         require(gl.message.sender_address == Address(e['owner']), 'only request owner may evaluate')
-        if r.status in ['ASSESSED', 'FINALIZED']:
+        if r.status == 'FINALIZED':
+            return
+        if r.status == 'ASSESSED':
+            self._queue_confirmation(request_id, True)
             return
         require(r.status in ['LOCKED', 'UNRESOLVED', 'EVALUATING'], 'request terminal')
         require(self._active(r), 'stale or quarantined evidence')
         if now_seconds() > e['deadline']:
             r.status = 'ASSESSED'
             r.result = canon(self._unresolved_result(r, 'DEADLINE_EXPIRED'))
-            gl.get_contract_at(gl.message.contract_address).emit(on='finalized').confirm_relation(request_id)
+            self._queue_confirmation(request_id)
             self._journal('timeout', request_id)
             return
         if int(r.attempts) >= 3:
             r.status = 'ASSESSED'
             r.result = canon(self._unresolved_result(r, 'RETRY_EXHAUSTED'))
-            gl.get_contract_at(gl.message.contract_address).emit(on='finalized').confirm_relation(request_id)
+            self._queue_confirmation(request_id)
             self._journal('retry-exhausted', request_id)
             return
         # This transaction persists the attempt BEFORE semantic execution.
@@ -573,7 +708,7 @@ SCHEMA=''' + canon(schema) + '\nPOLICY=' + canon(policy) + '\nUNTRUSTED_SOURCE_P
         if now_seconds() > e['deadline']:
             r.status = 'ASSESSED'
             r.result = canon(self._unresolved_result(r, 'DEADLINE_EXPIRED'))
-            gl.get_contract_at(gl.message.contract_address).emit(on='finalized').confirm_relation(request_id)
+            self._queue_confirmation(request_id)
             self._journal('timeout', request_id)
             return
         pk = e['policy_id'] + ':' + str(e['policy_revision'])
@@ -587,15 +722,56 @@ SCHEMA=''' + canon(schema) + '\nPOLICY=' + canon(policy) + '\nUNTRUSTED_SOURCE_P
         result = dict(gl.vm.run_nondet_unsafe(derive, validate))
         if result['availability'] != 'AVAILABLE':
             result = self._unresolved_result(r, result['unresolved'][0], result['availability'])
+        if result['availability'] == 'AVAILABLE':
+            rebuilt = self._decision(result['discriminators'], result['scope_flags'], schema, policy)
+            require(all(typed_equal(result[k], v) for k, v in rebuilt.items()), 'inconsistent authoritative decision')
+            rebuilt.update({'witnesses': result['witnesses'], 'adequate_witness_sets': result['adequate_witness_sets']})
+            result = rebuilt
         r.result = canon(result)
         if result['availability'] == 'AVAILABLE' or result['availability'] == 'CHANGED' or int(r.attempts) == 3:
             r.status = 'ASSESSED'
             if result.get('relation') == 'SAME':
                 r.fingerprint = digest([pk, result['scope'], result['discriminators'][0]])
-            gl.get_contract_at(gl.message.contract_address).emit(on='finalized').confirm_relation(request_id)
+            self._queue_confirmation(request_id)
         else:
             r.status = 'UNRESOLVED'
         self._journal('assessment', request_id)
+
+    def _queue_confirmation(self, request_id: str, recovery: bool = False) -> None:
+        attempts = int(self.confirmation_attempts.get(request_id, u8(0)))
+        if attempts >= 3:
+            return
+        now = now_seconds()
+        if recovery and attempts and now < int(self.confirmation_times[request_id]) + 60:
+            return
+        self.confirmation_attempts[request_id] = u8(attempts + 1)
+        self.confirmation_times[request_id] = u64(now)
+        gl.get_contract_at(gl.message.contract_address).emit(on='finalized').confirm_relation(request_id)
+        self._journal('confirmation-queued', request_id)
+
+    def _negative_active(self, request_id: str) -> bool:
+        if not self.nonmerge_active.get(request_id, False):
+            return False
+        correction = self.negative_corrections.get(request_id, '')
+        for _ in range(MAX_DISTINCT_WITNESSES):
+            if not correction or correction not in self.relations:
+                return True
+            r = self.relations[correction]
+            if r.superseded_by:
+                if r.status != 'SUPERSEDED' or json.loads(r.result).get('relation') != 'SAME':
+                    return True
+                correction = r.superseded_by
+                continue
+            return not (r.status == 'FINALIZED' and self._active(r, False) and json.loads(r.result).get('relation') == 'SAME')
+        return True
+
+    def _edge_veto(self, edge: str) -> bool:
+        witnesses = self.nonmerge_history.get(edge)
+        if witnesses is None:
+            return False
+        if len(witnesses) > MAX_DISTINCT_WITNESSES:
+            return True
+        return any(self._negative_active(w) for w in witnesses)
 
     @gl.public.write
     def confirm_relation(self, request_id: str) -> None:
@@ -603,6 +779,14 @@ SCHEMA=''' + canon(schema) + '\nPOLICY=' + canon(policy) + '\nUNTRUSTED_SOURCE_P
         r = self.relations[request_id]
         if r.status != 'ASSESSED':
             return
+        e = json.loads(r.envelope)
+        if e['supersedes'] and self.relations[e['supersedes']].superseded_by:
+            current = self.relations[e['supersedes']].superseded_by
+            r.status = 'SUPERSEDED'
+            r.superseded_by = current
+            self._journal('stale-successor', request_id)
+            return
+        require(self._active(r, False), 'stale or quarantined evidence')
         r.status = 'FINALIZED'
         e, result = json.loads(r.envelope), json.loads(r.result)
         pk = e['policy_id'] + ':' + str(e['policy_revision'])
@@ -623,9 +807,7 @@ SCHEMA=''' + canon(schema) + '\nPOLICY=' + canon(policy) + '\nUNTRUSTED_SOURCE_P
         if e['supersedes']:
             prev = self.relations[e['supersedes']]
             if result['relation'] == 'SAME' and self._active(r, False) and self.nonmerge_active.get(e['supersedes'], False):
-                self.nonmerge_active[e['supersedes']] = False
-                self.nonmerge_counts[edge] = u64(int(self.nonmerge_counts[edge]) - 1)
-                self.nonmerge_edges[edge] = int(self.nonmerge_counts[edge]) > 0
+                self.negative_corrections[e['supersedes']] = request_id
             prev.status = 'SUPERSEDED'
             prev.superseded_by = request_id
             self._split(e['subject_id'], request_id)
@@ -680,7 +862,7 @@ SCHEMA=''' + canon(schema) + '\nPOLICY=' + canon(policy) + '\nUNTRUSTED_SOURCE_P
                     if len(negative_witnesses) > MAX_DISTINCT_WITNESSES:
                         return 'UNRESOLVED_DISTINCT_BOUND'
                     for witness_id in negative_witnesses:
-                        if self.nonmerge_active.get(witness_id, False):
+                        if self._negative_active(witness_id):
                             return 'UNRESOLVED_DISTINCT_EDGE'
                 same = self.pair_same.get(pair, '')
                 if not same:
@@ -695,7 +877,8 @@ SCHEMA=''' + canon(schema) + '\nPOLICY=' + canon(policy) + '\nUNTRUSTED_SOURCE_P
             return cid
         self._split(e['subject_id'], cid)
         self._split(e['right_subject_id'], cid)
-        self.clusters[cid] = ClusterRecord([], relation_id, pk, r.fingerprint, True, '')
+        witnesses = {key_pair(pk, a, b): self.pair_same[key_pair(pk, a, b)] for i, a in enumerate(members) for b in members[i + 1:]}
+        self.clusters[cid] = ClusterRecord([], relation_id, pk, r.fingerprint, True, '', canon(witnesses))
         for member in members:
             self.clusters[cid].members.append(member)
             self.subject_cluster[member] = cid
@@ -721,6 +904,9 @@ SCHEMA=''' + canon(schema) + '\nPOLICY=' + canon(policy) + '\nUNTRUSTED_SOURCE_P
         elif category == 'authority':
             require(item_id in self.authorities, 'unknown authority')
             self.authorities[item_id].active = False
+        elif category == 'manifest':
+            require(item_id in self.approved_manifests, 'unknown manifest')
+            self.approved_manifests[item_id].active = False
         elif category == 'consumer':
             address = Address(item_id)
             require(address in self.consumers, 'unknown consumer')
@@ -736,7 +922,7 @@ SCHEMA=''' + canon(schema) + '\nPOLICY=' + canon(policy) + '\nUNTRUSTED_SOURCE_P
         e = json.loads(r.envelope)
         result = json.loads(r.result) if r.result else {'relation': 'UNKNOWN', 'unresolved': ['NOT_EVALUATED']}
         active = self._active(r)
-        return {'bindings': e, 'status': r.status, 'decision_vector': result, 'active': active, 'superseded_by': r.superseded_by, 'attempts': int(r.attempts), 'fingerprint': r.fingerprint}
+        return {'bindings': e, 'status': r.status, 'decision_vector': result, 'active': active, 'superseded_by': r.superseded_by, 'attempts': int(r.attempts), 'confirmation_attempts': int(self.confirmation_attempts.get(request_id, u8(0))), 'fingerprint': r.fingerprint}
 
     @gl.public.view
     def get_alias(self, subject_id: str) -> dict:
@@ -746,13 +932,14 @@ SCHEMA=''' + canon(schema) + '\nPOLICY=' + canon(policy) + '\nUNTRUSTED_SOURCE_P
         c = self.clusters[cid]
         members = list(c.members)
         active = c.active
+        bound = json.loads(c.witnesses)
         for i, a in enumerate(members):
             for b in members[i + 1:]:
                 pair = key_pair(c.policy_key, a, b)
                 same = self.pair_same.get(pair, '')
                 edge = key_pair('', a, b)
                 negatives = self.nonmerge_history.get(edge)
-                if not same or not self._active(self.relations[same]) or self.nonmerge_edges.get(edge, False) or (negatives is not None and len(negatives) > MAX_DISTINCT_WITNESSES):
+                if not same or bound.get(pair) != same or self.relations[same].status != 'FINALIZED' or self.relations[same].fingerprint != c.fingerprint or not self._active(self.relations[same]) or self._edge_veto(edge):
                     active = False
         return {'historical_id': subject_id, 'canonical_id': members[0] if active else subject_id, 'cluster_id': cid, 'active': active, 'members': members, 'superseded_by': c.superseded_by}
 
@@ -760,7 +947,7 @@ SCHEMA=''' + canon(schema) + '\nPOLICY=' + canon(policy) + '\nUNTRUSTED_SOURCE_P
     def get_cluster(self, cluster_id: str) -> dict:
         require(cluster_id in self.clusters, 'unknown cluster')
         c = self.clusters[cluster_id]
-        return {'members': list(c.members), 'relation_id': c.relation_id, 'active': c.active, 'superseded_by': c.superseded_by, 'policy_key': c.policy_key}
+        return {'members': list(c.members), 'relation_id': c.relation_id, 'active': c.active and self.get_alias(list(c.members)[0])['cluster_id'] == cluster_id and self.get_alias(list(c.members)[0])['active'], 'superseded_by': c.superseded_by, 'policy_key': c.policy_key, 'fingerprint': c.fingerprint, 'witnesses': json.loads(c.witnesses)}
 
     @gl.public.view
     def history_page(self, offset: int, limit: int) -> list[str]:
@@ -877,4 +1064,4 @@ SCHEMA=''' + canon(schema) + '\nPOLICY=' + canon(policy) + '\nUNTRUSTED_SOURCE_P
 
     @gl.public.view
     def limits(self) -> dict:
-        return {'source_count': MAX_SOURCES, 'source_bytes': MAX_SOURCE_BYTES, 'packet_bytes': MAX_PACKET_BYTES, 'complete_context_bytes': MAX_CONTEXT_BYTES, 'prompt_bytes_and_conservative_input_token_bound': MAX_PROMPT_BYTES, 'model_output_bytes': MAX_MODEL_OUTPUT_BYTES, 'model_calls_per_participant': 1, 'discriminators': MAX_FIELDS, 'cluster_members': MAX_CLUSTER, 'cross_pairs': MAX_CROSS_PAIRS, 'distinct_witnesses_per_pair': MAX_DISTINCT_WITNESSES, 'retries': 3, 'history_capacity': MAX_HISTORY}
+        return {'source_count': MAX_SOURCES, 'source_bytes': MAX_SOURCE_BYTES, 'packet_bytes': MAX_PACKET_BYTES, 'complete_context_bytes': MAX_CONTEXT_BYTES, 'prompt_bytes_and_conservative_input_token_bound': MAX_PROMPT_BYTES, 'model_output_bytes': MAX_MODEL_OUTPUT_BYTES, 'model_calls_per_participant': 1, 'discriminators': MAX_FIELDS, 'cluster_members': MAX_CLUSTER, 'cross_pairs': MAX_CROSS_PAIRS, 'distinct_witnesses_per_pair': MAX_DISTINCT_WITNESSES, 'retries': 3, 'history_capacity': MAX_HISTORY, 'dropped_history_events': int(self.dropped_events)}

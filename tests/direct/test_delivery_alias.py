@@ -236,6 +236,7 @@ def test_policy_revision_cannot_bypass_known_distinct(harness):
     h.signet.register_policy(h.policy,2,h.schema,'obligation')
     h.consumer=h.world.deploy('contracts/receivable.py',str(h.resolver_address),h.policy,2,h.schema)
     h.consumer_address=h.consumer.address
+    h.signet.admit_consumer(str(h.consumer_address),True)
     with h.vm.prank(h.consumer_address):
         h.signet.register_consumer(str(h.consumer_address),canonical({'policy_id':h.policy,'policy_revision':2,'schema_id':h.schema,'unresolved_consequence':'KEEP_HOLD'}))
     h.policy_revision=2

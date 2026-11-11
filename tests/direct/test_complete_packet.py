@@ -10,6 +10,9 @@ def relock(h, e, manifests):
     e['request_id']='larger'
     e['generation']=2
     e['source_manifest_digest']=digest(manifests)
+    if len([s for m in manifests for s in m['sources']]) <= 4 and sum(s['byte_length'] for m in manifests for s in m['sources']) <= 24576:
+        for manifest in manifests:
+            h.signet.approve_record_manifest(h.kind.lower(), canonical(manifest))
     h.signet.compare_records('larger',h.schema,canonical(manifests[0]),canonical(manifests[1]),canonical(e))
 
 
@@ -22,6 +25,7 @@ def test_complete_context_rejected_without_truncation(harness):
         source['source_id']='large-'+str(side)
         source['byte_length']=13000
         source['raw_hash']=hashlib.sha256(b'x'*13000).hexdigest()
+        h.signet.withdraw_source(manifests[side]['sources'][0]['source_id'], 'Replace obsolete test record')
         h.signet.attest_source(canonical(source))
         manifests[side]['sources']=[source]
     with h.vm.expect_revert('complete task exceeds semantic context'):
@@ -58,6 +62,7 @@ def test_source_locator_hash_mismatch_is_unresolved(harness):
     e,m=h.make()
     manifests=deepcopy(m)
     source=deepcopy(manifests[0]['sources'][0]);source['source_id']='bad-locator';source['required_spans'][0]['span_hash']='0'*64
+    h.signet.withdraw_source(manifests[0]['sources'][0]['source_id'], 'Replace obsolete test record')
     h.signet.attest_source(canonical(source));manifests[0]['sources']=[source]
     relock(h,e,manifests)
     r=h.evaluate('larger')
@@ -71,6 +76,7 @@ def test_invalid_utf8_is_unavailable(harness):
     e,m=h.make()
     manifests=deepcopy(m)
     source=source_manifest('binary','left','issuer','https://records.example.org/binary',b'\xff\n','obligation')
+    h.signet.withdraw_source(manifests[0]['sources'][0]['source_id'], 'Replace obsolete test record')
     h.signet.attest_source(canonical(source));manifests[0]['sources']=[source]
     h.vm.mock_web(source['url'],{'status':200,'body':b'\xff\n'})
     relock(h,e,manifests)

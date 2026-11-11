@@ -40,9 +40,11 @@ class Harness:
         self.consumer = deploy('contracts/' + contract + '.py', str(self.resolver_address), self.policy, 1, self.schema)
         self.consumer_address = self.consumer.address
         self.signet.register_authority('issuer', str(alice), 'https://records.example.org/', 'https://records.example.org/authority')
+        self.signet.admit_consumer(str(self.consumer_address), True)
         with vm.prank(self.consumer_address):
             self.signet.register_consumer(str(self.consumer_address), canonical({'policy_id': self.policy, 'policy_revision': 1, 'schema_id': self.schema, 'unresolved_consequence': 'DO_NOT_LINK' if kind == 'INCIDENT' else 'KEEP_HOLD'}))
         self.generation = {}
+        self.subject_sources = {}
 
     def make(self, request_id='r1', left_id='left', right_id='right', changes=None, flags=None, missing=None, generation=None, prepare=True, supersedes='', revision=1, extra_lines=None):
         values = dict(zip(FIELDS[self.kind], VALUES[self.kind]))
@@ -62,9 +64,13 @@ class Harness:
             if extra_lines:
                 lines += [line + '\n' for line in extra_lines]
             raw = ''.join(lines).encode()
-            sid = request_id + '-' + str(side)
+            previous = self.subject_sources.get(subject)
+            sid = previous['source_id'] if previous else request_id + '-' + str(side)
             url = 'https://records.example.org/' + sid
-            source = source_manifest(sid, subject, 'issuer', url, raw, self.kind.lower(), revision)
+            import hashlib
+            current_revision = previous['revision'] + int(previous['raw_hash'] != hashlib.sha256(raw).hexdigest()) if previous else revision
+            source = source_manifest(sid, subject, 'issuer', url, raw, self.kind.lower(), current_revision)
+            self.subject_sources[subject] = source
             self.signet.attest_source(canonical(source))
             manifests.append({'subject_id': subject, 'sources': [source]})
             self.vm.mock_web(url, {'status': 200, 'body': raw})
@@ -73,9 +79,11 @@ class Harness:
             for line in raw.splitlines(keepends=True):
                 text = line.decode().strip()
                 key = text.split(': ', 1)[0]
-                witnesses[key] = source['raw_hash'] + ':' + str(offset) + ':' + str(offset + len(line))
+                witnesses[key] = str(side) + ':' + source['source_id'] + ':' + source['raw_hash'] + ':' + str(offset) + ':' + str(offset + len(line))
                 offset += len(line)
             answers.append({'fields': {k: {'value': v, 'spans': [witnesses[k]] if v else []} for k, v in side_values[side].items()}, 'flags': {k: {'value': v, 'spans': [witnesses[k]] if v else []} for k, v in side_flags[side].items()}})
+        for manifest in manifests:
+            self.signet.approve_record_manifest(self.kind.lower(), canonical(manifest))
         self.answer = {'sides': answers}
         self.vm.mock_llm('SIGNET_IDENTITY_EXTRACTION_V1', json.dumps(self.answer))
         gen = generation if generation is not None else self.generation.get(left_id, 0) + 1
