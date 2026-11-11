@@ -20,9 +20,9 @@ def assessment_envelope(owner, request_id, manifests, consumer, generation, supe
     return e
 
 
-def assess_wave(owner, resolver, consumer, requests):
+def assess_wave(owner, resolver, consumer, requests, prefix=None):
     envelopes = {name: assessment_envelope(owner, name, manifests, consumer, generation, supersedes) for name, manifests, generation, supersedes in requests}
-    queue_wave([(owner, 'compare-' + name, resolver, 'compare_records', [name, 'obligation:v1', canonical(manifests[0]), canonical(manifests[1]), canonical(envelopes[name])]) for name, manifests, _, _ in requests])
+    queue_wave((prefix or []) + [(owner, 'compare-' + name, resolver, 'compare_records', [name, 'obligation:v1', canonical(manifests[0]), canonical(manifests[1]), canonical(envelopes[name])]) for name, manifests, _, _ in requests])
     queue_wave([(owner, 'evaluate-' + name, resolver, 'evaluate', [name]) for name in envelopes])
     results = {}
     for name, envelope in envelopes.items():
@@ -74,37 +74,33 @@ def run():
     atomic_json(ROOT / 'source-takeover-regression.json', takeover)
 
     request_id = 'safety-correction'
-    principal.transaction('release-before-' + request_id, consumer, 'release', ['invoice-next-month'])
     e = assessment_envelope(owner, request_id, manifests, consumer, 2, 'invoice-next-month')
-    principal.transaction('prepare-' + request_id, consumer, 'reserve', [request_id, canonical(e), e['right_subject_id'], 12500])
+    queue_wave([(principal, 'release-before-' + request_id, consumer, 'release', ['invoice-next-month']), (principal, 'prepare-' + request_id, consumer, 'reserve', [request_id, canonical(e), e['right_subject_id'], 12500])])
     _, results = assess_wave(owner, resolver, consumer, [('safety-correction', manifests, 2, 'invoice-next-month'), ('safety-ab', [clique[0], clique[1]], 1, ''), ('safety-bc', [clique[1], clique[2]], 1, ''), ('safety-ac', [clique[0], clique[2]], 2, '')])
-    queue_wave([(owner, 'publish-' + request_id, resolver, 'publish_to', [request_id, consumer, request_id]), (owner, 'alias-safety-ab', resolver, 'register_alias', [clique[0]['subject_id'], 'safety-ab']), (owner, 'alias-safety-ac', resolver, 'register_alias', [clique[0]['subject_id'], 'safety-ac'])])
+    queue_wave([(owner, 'publish-' + request_id, resolver, 'publish_to', [request_id, consumer, request_id]), (owner, 'alias-safety-ab', resolver, 'register_alias', [clique[0]['subject_id'], 'safety-ab']), (owner, 'alias-safety-ac', resolver, 'register_alias', [clique[0]['subject_id'], 'safety-ac']), (owner, 'alias-' + request_id, resolver, 'register_alias', [e['subject_id'], request_id])])
     publish = json.loads((ROOT / ('publish-' + request_id + '.receipt.json')).read_text())
     owner.wait_delivery(resolver, consumer, request_id)
     assert len(collect_children(owner, publish, 'publish-' + request_id)) >= 2
     before_path = ROOT / 'correction-before-revocation.json'
     if not before_path.exists():
         permitted = principal.read(consumer, 'get_operation', [request_id]); assert permitted['effective_status'] == 'PERMITTED'
-        owner.transaction('alias-' + request_id, resolver, 'register_alias', [e['subject_id'], request_id])
         alias = owner.read(resolver, 'get_alias', [e['subject_id']]); assert alias['active']
         atomic_json(before_path, {'relation': results[request_id], 'consumer': permitted, 'alias': alias})
     prior_path = ROOT / 'alias-before-replacement.json'
     if not prior_path.exists():
         prior = owner.read(resolver, 'get_alias', [clique[2]['subject_id']]); assert prior['active'] and len(prior['members']) == 3
         atomic_json(prior_path, prior)
-    owner.transaction('quarantine-' + request_id, resolver, 'quarantine', ['relation', request_id])
+    _, results = assess_wave(owner, resolver, consumer, [('safety-unbound-same', manifests, 3, ''), ('safety-ab-replacement', [clique[0], clique[1]], 3, '')], prefix=[(owner, 'quarantine-' + request_id, resolver, 'quarantine', ['relation', request_id])])
     checkpoint = ROOT / 'correction-after-revocation.json'
     if not checkpoint.exists():
         revoked = principal.read(consumer, 'get_operation', [request_id])
         capacity = principal.read(consumer, 'get_capacity', [e['right_subject_id']])
         assert revoked['effective_status'] == 'QUARANTINED' and capacity['held_minor'] == 12500
         atomic_json(checkpoint, {'consumer': revoked, 'capacity': capacity, 'alias': owner.read(resolver, 'get_alias', [e['subject_id']])})
-    _, results = assess_wave(owner, resolver, consumer, [('safety-unbound-same', manifests, 3, ''), ('safety-ab-replacement', [clique[0], clique[1]], 3, '')])
     unbound = results['safety-unbound-same']; assert unbound['active'] is False
-    owner.transaction('alias-safety-unbound', resolver, 'register_alias', [e['subject_id'], 'safety-unbound-same'])
+    queue_wave([(owner, 'alias-safety-unbound', resolver, 'register_alias', [e['subject_id'], 'safety-unbound-same']), (principal, 'release-' + request_id, consumer, 'release', [request_id])])
     unmerged = owner.read(resolver, 'get_alias', [e['subject_id']]); assert unmerged['canonical_id'] == e['subject_id'] and unmerged['cluster_id'] == ''
     atomic_json(ROOT / 'revoked-correction-regression.json', {'unbound_relation': unbound, 'unmerged_alias': unmerged, 'corrected_negative': 'invoice-next-month'})
-    principal.transaction('release-' + request_id, consumer, 'release', [request_id])
     after = owner.read(resolver, 'get_alias', [clique[2]['subject_id']]); assert not after['active'] and after['canonical_id'] == clique[2]['subject_id']
     assert owner.read(resolver, 'get_relation', ['safety-bc'])['active'] is True
     prior = json.loads(prior_path.read_text())
