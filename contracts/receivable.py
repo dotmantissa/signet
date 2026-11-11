@@ -54,6 +54,8 @@ class ReceivableConsumer(gl.Contract):
     capacities: TreeMap[str, u256]
     held: TreeMap[str, u256]
 
+    applied_generations: TreeMap[str, u64]
+
     def __init__(self, resolver: str, policy_id: str, policy_revision: int, schema_id: str):
         require(1 <= policy_revision <= MAX_U64, 'policy revision overflow')
         self.owner = gl.message.sender_address
@@ -138,6 +140,7 @@ class ReceivableConsumer(gl.Contract):
             status = 'REFUSED_UNRESOLVED' if relation['decision_vector'].get('relation') == 'UNKNOWN' else 'REFUSED_DISTINCT'
         if pending.status != 'RELEASED':
             pending.status = status
+        self.applied_generations[e['subject_id']] = u64(max(e['generation'], int(self.applied_generations.get(e['subject_id'], u64(0)))))
         pending.payload_digest = pd
         pending.acknowledgement = canon({'operation_id': op, 'payload_digest': pd, 'status': status, 'generation': e['generation']})
         gl.get_contract_at(self.resolver).emit(on='finalized').acknowledge(gl.message.contract_address.as_hex, op, pending.acknowledgement)
@@ -158,7 +161,7 @@ class ReceivableConsumer(gl.Contract):
             current = gl.get_contract_at(self.resolver).view().get_relation(e['request_id'])
             if not current['active'] or current['status'] != 'FINALIZED':
                 effective = 'QUARANTINED'
-        return {'operation_id': operation_id, 'status': p.status, 'effective_status': effective, 'bindings': e, 'consequence': json.loads(p.consequence), 'owner': p.owner.as_hex, 'acknowledgement': p.acknowledgement}
+        return {'operation_id': operation_id, 'status': p.status, 'effective_status': effective, 'bindings': e, 'consequence': json.loads(p.consequence), 'owner': p.owner.as_hex, 'acknowledgement': p.acknowledgement, 'last_applied_generation': int(self.applied_generations.get(e['subject_id'], u64(0)))}
 
     @gl.public.view
     def history_page(self, offset: int, limit: int) -> list[str]:
