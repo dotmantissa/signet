@@ -26,11 +26,17 @@ def test_validator_rejects_wrong_nested_types_and_shapes(request, fixture_name, 
 
 
 @pytest.mark.parametrize('fixture_name', ['harness', 'incident'])
-@pytest.mark.parametrize('subset', ['first', 'last', 'all'])
-def test_every_accepted_equivalent_witness_choice_preserves_consumer_action(request, fixture_name, subset):
+@pytest.mark.parametrize('left_subset', ['first', 'last', 'all'])
+@pytest.mark.parametrize('right_subset', ['first', 'last', 'all'])
+@pytest.mark.parametrize('decision_kind', ['SAME', 'DISTINCT', 'UNKNOWN'])
+def test_every_accepted_equivalent_witness_choice_preserves_consumer_action(request, fixture_name, left_subset, right_subset, decision_kind):
     h = request.getfixturevalue(fixture_name)
     field, value = ('payer_id', 'reg:payer') if fixture_name == 'harness' else ('occurrence_id', 'outage:42')
-    h.make(extra_lines=[field + ': ' + value])
+    discriminator = 'period' if fixture_name == 'harness' else 'event_date'
+    changed_value = '2026-11' if fixture_name == 'harness' else '2026-11-04'
+    h.make(extra_lines=[field + ': ' + value],
+           changes={discriminator: changed_value} if decision_kind == 'DISTINCT' else None,
+           missing=discriminator if decision_kind == 'UNKNOWN' else None)
     answer = deepcopy(h.answer)
     for side, manifest in enumerate(h.manifests):
         source = manifest['sources'][0]
@@ -43,18 +49,21 @@ def test_every_accepted_equivalent_witness_choice_preserves_consumer_action(requ
     h.vm._llm_mocks.clear(); h.vm.mock_llm('SIGNET_IDENTITY_EXTRACTION_V1', json.dumps(answer))
     h.evaluate()
     candidate = deepcopy(h.vm._captured_validators[-1][0])
+    assert candidate['relation'] == decision_kind
     for side in range(2):
         adequate = candidate['adequate_witness_sets'][side]['fields:' + field]
         assert len(adequate) == 2
+        subset = [left_subset, right_subset][side]
         choice = adequate if subset == 'all' else [adequate[0 if subset == 'first' else -1]]
         candidate['adequate_witness_sets'][side]['fields:' + field] = choice
         candidate['witnesses'][side]['fields:' + field] = choice[0]
     assert h.vm.run_validator(leader_result=candidate) is True
     # Model the approved variant returned by consensus; application action stays identical.
     with h.world.context(h.signet): h.signet.contract.relations['r1'].result = canonical(candidate)
-    assert h.deliver()['effective_status'] == 'PERMITTED'
+    expected = {'SAME': 'PERMITTED', 'DISTINCT': 'REFUSED_DISTINCT', 'UNKNOWN': 'REFUSED_UNRESOLVED'}[decision_kind]
+    assert h.deliver()['effective_status'] == expected
     if fixture_name == 'harness': assert h.consumer.get_capacity('right')['held_minor'] == 12500
-    else: assert h.consumer.resolve_record('left')['canonical_id'] == 'right'
+    else: assert h.consumer.resolve_record('left')['canonical_id'] == ('right' if decision_kind == 'SAME' else 'left')
 
 
 @pytest.mark.parametrize('fixture_name', ['harness', 'incident'])
