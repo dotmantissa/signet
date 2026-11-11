@@ -1,0 +1,4884 @@
+{
+  "hash": "0xde5788077577a24d98d57d2c7332a233a3598281acc057c6e1aab2abc15e9c45",
+  "from_address": "0x5391D96ddEc55ce5F37E4fA7c6c7abC60b76a636",
+  "to_address": "0x5391D96ddEc55ce5F37E4fA7c6c7abC60b76a636",
+  "data": {
+    "calldata": {
+      "base64": "FgRhcmdzFbQBb3JnYW5pemF0aW9uLXNhbWUtbmFtZQkGbWV0aG9kdGFzc2Vzc19hdHRlbXB0",
+      "raw": [
+        22,
+        4,
+        97,
+        114,
+        103,
+        115,
+        21,
+        180,
+        1,
+        111,
+        114,
+        103,
+        97,
+        110,
+        105,
+        122,
+        97,
+        116,
+        105,
+        111,
+        110,
+        45,
+        115,
+        97,
+        109,
+        101,
+        45,
+        110,
+        97,
+        109,
+        101,
+        9,
+        6,
+        109,
+        101,
+        116,
+        104,
+        111,
+        100,
+        116,
+        97,
+        115,
+        115,
+        101,
+        115,
+        115,
+        95,
+        97,
+        116,
+        116,
+        101,
+        109,
+        112,
+        116
+      ],
+      "readable": "{\"args\":[\"organization-same-name\",1],\"method\":\"assess_attempt\"}"
+    }
+  },
+  "value": 0,
+  "type": 2,
+  "status": 7,
+  "result": 6,
+  "consensus_data": {
+    "votes": {
+      "0x2bB088e4E6Fd1faBBd23d93F38D01f28a954A49c": "idle",
+      "0x37CD8552B86b2B662eCfb69C4A1253dBE41EB4C1": "agree",
+      "0x722474B013fA39E5aA8785f927dCeB0e3F89815B": "agree",
+      "0x8644a8D2D08903cAFA1F0fb28E34E0ecA727e9ED": "idle",
+      "0xC65Ec56a1141866951B34D846be8EF433764A48B": "agree"
+    },
+    "validators": [
+      {
+        "mode": "validator",
+        "vote": "agree",
+        "result": "AAA=",
+        "calldata": "FgRhcmdzFbQBb3JnYW5pemF0aW9uLXNhbWUtbmFtZQkGbWV0aG9kdGFzc2Vzc19hdHRlbXB0",
+        "gas_used": 0,
+        "node_config": {
+          "stake": 100,
+          "address": "0xC65Ec56a1141866951B34D846be8EF433764A48B",
+          "primary_model": {
+            "model": "openai/gpt-5.4",
+            "config": {
+              "models": [
+                "openai/gpt-5.4",
+                "anthropic/claude-sonnet-4.6",
+                "google/gemini-3-flash-preview"
+              ]
+            },
+            "plugin": "openai-compatible",
+            "provider": "openrouter",
+            "plugin_config": {
+              "api_url": "https://openrouter.ai/api",
+              "api_key_env_var": "OPENROUTERAPIKEY"
+            },
+            "fallback_validator": "0x2bB088e4E6Fd1faBBd23d93F38D01f28a954A49c"
+          },
+          "secondary_model": {
+            "model": "policy:prd-gpt-oss",
+            "config": {
+              "policy_ir": [
+                "policy",
+                [
+                  "and",
+                  [
+                    "meets_req"
+                  ],
+                  [
+                    "not",
+                    [
+                      "is",
+                      "disabled"
+                    ]
+                  ],
+                  [
+                    "cmp",
+                    "success_rate",
+                    "ge",
+                    0.2
+                  ],
+                  [
+                    "or",
+                    [
+                      "family_eq",
+                      "gpt-oss-120b"
+                    ],
+                    [
+                      "family_eq",
+                      "deepseek-v3.2"
+                    ],
+                    [
+                      "family_eq",
+                      "gpt-5.4"
+                    ]
+                  ]
+                ],
+                [
+                  "add",
+                  [
+                    "scale",
+                    100,
+                    [
+                      "gate",
+                      [
+                        "family_eq",
+                        "gpt-oss-120b"
+                      ],
+                      [
+                        "lit",
+                        1
+                      ]
+                    ]
+                  ],
+                  [
+                    "scale",
+                    10,
+                    [
+                      "gate",
+                      [
+                        "family_eq",
+                        "deepseek-v3.2"
+                      ],
+                      [
+                        "lit",
+                        1
+                      ]
+                    ]
+                  ],
+                  [
+                    "scale",
+                    1,
+                    [
+                      "gate",
+                      [
+                        "family_eq",
+                        "gpt-5.4"
+                      ],
+                      [
+                        "lit",
+                        1
+                      ]
+                    ]
+                  ],
+                  [
+                    "scale",
+                    0.25,
+                    [
+                      "neg",
+                      [
+                        "normalize",
+                        [
+                          "field",
+                          "price_in"
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "scale",
+                    0.45,
+                    [
+                      "neg",
+                      [
+                        "normalize",
+                        [
+                          "field",
+                          "price_out"
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "scale",
+                    0.2,
+                    [
+                      "field",
+                      "success_rate"
+                    ]
+                  ],
+                  [
+                    "scale",
+                    0.1,
+                    [
+                      "neg",
+                      [
+                        "normalize",
+                        [
+                          "field",
+                          "latency_ms"
+                        ]
+                      ]
+                    ]
+                  ]
+                ],
+                [
+                  "argmax"
+                ],
+                [
+                  "id"
+                ],
+                [
+                  "always",
+                  {
+                    "action": "next_candidate"
+                  }
+                ]
+              ],
+              "timeout_ms": 22000,
+              "first_token_timeout_ms": 7000
+            },
+            "plugin": "openai-compatible",
+            "address": "0x2bB088e4E6Fd1faBBd23d93F38D01f28a954A49c",
+            "provider": "llm-router",
+            "plugin_config": {
+              "api_url": "https://router.ygr.ai",
+              "api_key_env_var": "LLM_ROUTER_API_KEY"
+            }
+          }
+        },
+        "genvm_result": {
+          "stderr": "/py/libs/genlayer/gl/_internal/storage.py:21: UserWarning: Detected pickling storage class. Reading storage in nondet mode is not supported\n  warnings.warn(\n",
+          "stdout": "",
+          "raw_error": null,
+          "error_code": null,
+          "error_description": null
+        },
+        "contract_state": {},
+        "execution_stats": {
+          "llm": {
+            "tokens": {
+              "node-0xC65Ec56a1141866951B34D846be8EF433764A48B/openai/gpt-5.4": {
+                "input": 970,
+                "total": 1337,
+                "output": 367
+              }
+            }
+          },
+          "call_counts": {
+            "CONSUME_FUEL": 1,
+            "STORAGE_READ": 285,
+            "NOTIFY_FINISHED": 1,
+            "REMAINING_FUEL_AS_GEN": 1
+          },
+          "host_first_method": "STORAGE_READ",
+          "delete_genvm_status": 200,
+          "host_loop_entered_s": 2050.664683645,
+          "host_loop_enter_wait_ms": 9,
+          "host_time_per_method_ms": {
+            "CONSUME_FUEL": 0,
+            "STORAGE_READ": 147,
+            "REMAINING_FUEL_AS_GEN": 0
+          },
+          "host_total_handling_time_ms": 147,
+          "manager_run_attempt_success": {
+            "attempt": 0,
+            "duration_ms": 6
+          },
+          "host_first_method_received_s": 2050.665434826,
+          "host_accept_to_first_method_ms": 1
+        },
+        "nondet_disagree": null,
+        "processing_time": 7222,
+        "execution_result": "SUCCESS",
+        "contract_state_hash": "ef71fe479ed8e930d5d6fe769f0ad9c0b8232081436d35525595c030d7c5fa88",
+        "pending_transactions": [
+          {
+            "on": "finalized",
+            "value": 0,
+            "address": "0x5391D96ddEc55ce5F37E4fA7c6c7abC60b76a636",
+            "calldata": "FgRhcmdzDbQBb3JnYW5pemF0aW9uLXNhbWUtbmFtZQZtZXRob2SEAWNvbmZpcm1fcmVsYXRpb24="
+          }
+        ]
+      },
+      {
+        "mode": "validator",
+        "vote": "agree",
+        "result": "AAA=",
+        "calldata": "FgRhcmdzFbQBb3JnYW5pemF0aW9uLXNhbWUtbmFtZQkGbWV0aG9kdGFzc2Vzc19hdHRlbXB0",
+        "gas_used": 0,
+        "node_config": {
+          "stake": 100,
+          "address": "0x37CD8552B86b2B662eCfb69C4A1253dBE41EB4C1",
+          "primary_model": {
+            "model": "policy:prd-gpt-5-4",
+            "config": {
+              "policy_ir": [
+                "policy",
+                [
+                  "and",
+                  [
+                    "meets_req"
+                  ],
+                  [
+                    "not",
+                    [
+                      "is",
+                      "disabled"
+                    ]
+                  ],
+                  [
+                    "cmp",
+                    "success_rate",
+                    "ge",
+                    0.2
+                  ],
+                  [
+                    "or",
+                    [
+                      "family_eq",
+                      "gpt-5.4"
+                    ],
+                    [
+                      "family_eq",
+                      "gemini-3-flash-preview"
+                    ],
+                    [
+                      "family_eq",
+                      "gpt-oss-120b"
+                    ]
+                  ]
+                ],
+                [
+                  "add",
+                  [
+                    "scale",
+                    100,
+                    [
+                      "gate",
+                      [
+                        "family_eq",
+                        "gpt-5.4"
+                      ],
+                      [
+                        "lit",
+                        1
+                      ]
+                    ]
+                  ],
+                  [
+                    "scale",
+                    10,
+                    [
+                      "gate",
+                      [
+                        "family_eq",
+                        "gemini-3-flash-preview"
+                      ],
+                      [
+                        "lit",
+                        1
+                      ]
+                    ]
+                  ],
+                  [
+                    "scale",
+                    1,
+                    [
+                      "gate",
+                      [
+                        "family_eq",
+                        "gpt-oss-120b"
+                      ],
+                      [
+                        "lit",
+                        1
+                      ]
+                    ]
+                  ],
+                  [
+                    "scale",
+                    0.25,
+                    [
+                      "neg",
+                      [
+                        "normalize",
+                        [
+                          "field",
+                          "price_in"
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "scale",
+                    0.45,
+                    [
+                      "neg",
+                      [
+                        "normalize",
+                        [
+                          "field",
+                          "price_out"
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "scale",
+                    0.2,
+                    [
+                      "field",
+                      "success_rate"
+                    ]
+                  ],
+                  [
+                    "scale",
+                    0.1,
+                    [
+                      "neg",
+                      [
+                        "normalize",
+                        [
+                          "field",
+                          "latency_ms"
+                        ]
+                      ]
+                    ]
+                  ]
+                ],
+                [
+                  "argmax"
+                ],
+                [
+                  "id"
+                ],
+                [
+                  "always",
+                  {
+                    "action": "next_candidate"
+                  }
+                ]
+              ],
+              "timeout_ms": 22000,
+              "first_token_timeout_ms": 7000
+            },
+            "plugin": "openai-compatible",
+            "provider": "llm-router",
+            "plugin_config": {
+              "api_url": "https://router.ygr.ai",
+              "api_key_env_var": "LLM_ROUTER_API_KEY"
+            },
+            "fallback_validator": "0x0cf3809a31B0c7E0742d126451aDE1977e3748D2"
+          },
+          "secondary_model": {
+            "model": "google/gemini-3-flash-preview",
+            "config": {
+              "models": [
+                "google/gemini-3-flash-preview",
+                "openai/gpt-5.4",
+                "anthropic/claude-sonnet-4.6"
+              ]
+            },
+            "plugin": "openai-compatible",
+            "address": "0x0cf3809a31B0c7E0742d126451aDE1977e3748D2",
+            "provider": "openrouter",
+            "plugin_config": {
+              "api_url": "https://openrouter.ai/api",
+              "api_key_env_var": "OPENROUTERAPIKEY"
+            }
+          }
+        },
+        "genvm_result": {
+          "stderr": "/py/libs/genlayer/gl/_internal/storage.py:21: UserWarning: Detected pickling storage class. Reading storage in nondet mode is not supported\n  warnings.warn(\n",
+          "stdout": "",
+          "raw_error": null,
+          "error_code": null,
+          "error_description": null
+        },
+        "contract_state": {},
+        "execution_stats": {
+          "llm": {
+            "tokens": {
+              "node-0x37CD8552B86b2B662eCfb69C4A1253dBE41EB4C1/policy:prd-gpt-5-4": {
+                "input": 970,
+                "total": 1337,
+                "output": 367
+              }
+            }
+          },
+          "call_counts": {
+            "CONSUME_FUEL": 1,
+            "STORAGE_READ": 285,
+            "NOTIFY_FINISHED": 1,
+            "REMAINING_FUEL_AS_GEN": 1
+          },
+          "host_first_method": "STORAGE_READ",
+          "delete_genvm_status": 200,
+          "host_loop_entered_s": 2058.315858465,
+          "host_loop_enter_wait_ms": 7660,
+          "host_time_per_method_ms": {
+            "CONSUME_FUEL": 0,
+            "STORAGE_READ": 70,
+            "REMAINING_FUEL_AS_GEN": 0
+          },
+          "host_total_handling_time_ms": 70,
+          "manager_run_attempt_success": {
+            "attempt": 0,
+            "duration_ms": 7656
+          },
+          "host_first_method_received_s": 2058.31617194,
+          "host_accept_to_first_method_ms": 0
+        },
+        "nondet_disagree": null,
+        "processing_time": 14770,
+        "execution_result": "SUCCESS",
+        "contract_state_hash": "ef71fe479ed8e930d5d6fe769f0ad9c0b8232081436d35525595c030d7c5fa88",
+        "pending_transactions": [
+          {
+            "on": "finalized",
+            "value": 0,
+            "address": "0x5391D96ddEc55ce5F37E4fA7c6c7abC60b76a636",
+            "calldata": "FgRhcmdzDbQBb3JnYW5pemF0aW9uLXNhbWUtbmFtZQZtZXRob2SEAWNvbmZpcm1fcmVsYXRpb24="
+          }
+        ]
+      },
+      {
+        "mode": "validator",
+        "vote": "idle",
+        "result": "AmlkbGU=",
+        "calldata": "",
+        "gas_used": 0,
+        "node_config": {
+          "id": 5801,
+          "model": "policy:prd-glm",
+          "stake": 100,
+          "config": {
+            "policy_ir": [
+              "policy",
+              [
+                "and",
+                [
+                  "meets_req"
+                ],
+                [
+                  "not",
+                  [
+                    "is",
+                    "disabled"
+                  ]
+                ],
+                [
+                  "cmp",
+                  "success_rate",
+                  "ge",
+                  0.2
+                ],
+                [
+                  "or",
+                  [
+                    "family_eq",
+                    "glm-5.1"
+                  ],
+                  [
+                    "family_eq",
+                    "gpt-oss-120b"
+                  ],
+                  [
+                    "family_eq",
+                    "gpt-5.4"
+                  ]
+                ]
+              ],
+              [
+                "add",
+                [
+                  "scale",
+                  100,
+                  [
+                    "gate",
+                    [
+                      "family_eq",
+                      "glm-5.1"
+                    ],
+                    [
+                      "lit",
+                      1
+                    ]
+                  ]
+                ],
+                [
+                  "scale",
+                  10,
+                  [
+                    "gate",
+                    [
+                      "family_eq",
+                      "gpt-oss-120b"
+                    ],
+                    [
+                      "lit",
+                      1
+                    ]
+                  ]
+                ],
+                [
+                  "scale",
+                  1,
+                  [
+                    "gate",
+                    [
+                      "family_eq",
+                      "gpt-5.4"
+                    ],
+                    [
+                      "lit",
+                      1
+                    ]
+                  ]
+                ],
+                [
+                  "scale",
+                  0.25,
+                  [
+                    "neg",
+                    [
+                      "normalize",
+                      [
+                        "field",
+                        "price_in"
+                      ]
+                    ]
+                  ]
+                ],
+                [
+                  "scale",
+                  0.45,
+                  [
+                    "neg",
+                    [
+                      "normalize",
+                      [
+                        "field",
+                        "price_out"
+                      ]
+                    ]
+                  ]
+                ],
+                [
+                  "scale",
+                  0.2,
+                  [
+                    "field",
+                    "success_rate"
+                  ]
+                ],
+                [
+                  "scale",
+                  0.1,
+                  [
+                    "neg",
+                    [
+                      "normalize",
+                      [
+                        "field",
+                        "latency_ms"
+                      ]
+                    ]
+                  ]
+                ]
+              ],
+              [
+                "argmax"
+              ],
+              [
+                "id"
+              ],
+              [
+                "always",
+                {
+                  "action": "next_candidate"
+                }
+              ]
+            ],
+            "timeout_ms": 22000,
+            "first_token_timeout_ms": 7000
+          },
+          "plugin": "openai-compatible",
+          "address": "0x8644a8D2D08903cAFA1F0fb28E34E0ecA727e9ED",
+          "provider": "llm-router",
+          "plugin_config": {
+            "api_url": "https://router.ygr.ai",
+            "api_key_env_var": "LLM_ROUTER_API_KEY"
+          },
+          "fallback_validator": "0x0cf3809a31B0c7E0742d126451aDE1977e3748D2"
+        },
+        "genvm_result": {
+          "stderr": "Validator execution cancelled after quorum",
+          "stdout": "",
+          "raw_error": {
+            "fatal": false,
+            "causes": [
+              "VALIDATOR_QUORUM_REACHED"
+            ]
+          },
+          "error_code": "CONSENSUS_VALIDATOR_QUORUM_REACHED"
+        },
+        "contract_state": {},
+        "execution_stats": null,
+        "nondet_disagree": null,
+        "processing_time": 0,
+        "execution_result": "ERROR",
+        "contract_state_hash": null,
+        "pending_transactions": []
+      },
+      {
+        "mode": "validator",
+        "vote": "idle",
+        "result": "AmlkbGU=",
+        "calldata": "",
+        "gas_used": 0,
+        "node_config": {
+          "id": 5796,
+          "model": "policy:prd-gpt-oss",
+          "stake": 100,
+          "config": {
+            "policy_ir": [
+              "policy",
+              [
+                "and",
+                [
+                  "meets_req"
+                ],
+                [
+                  "not",
+                  [
+                    "is",
+                    "disabled"
+                  ]
+                ],
+                [
+                  "cmp",
+                  "success_rate",
+                  "ge",
+                  0.2
+                ],
+                [
+                  "or",
+                  [
+                    "family_eq",
+                    "gpt-oss-120b"
+                  ],
+                  [
+                    "family_eq",
+                    "deepseek-v3.2"
+                  ],
+                  [
+                    "family_eq",
+                    "gpt-5.4"
+                  ]
+                ]
+              ],
+              [
+                "add",
+                [
+                  "scale",
+                  100,
+                  [
+                    "gate",
+                    [
+                      "family_eq",
+                      "gpt-oss-120b"
+                    ],
+                    [
+                      "lit",
+                      1
+                    ]
+                  ]
+                ],
+                [
+                  "scale",
+                  10,
+                  [
+                    "gate",
+                    [
+                      "family_eq",
+                      "deepseek-v3.2"
+                    ],
+                    [
+                      "lit",
+                      1
+                    ]
+                  ]
+                ],
+                [
+                  "scale",
+                  1,
+                  [
+                    "gate",
+                    [
+                      "family_eq",
+                      "gpt-5.4"
+                    ],
+                    [
+                      "lit",
+                      1
+                    ]
+                  ]
+                ],
+                [
+                  "scale",
+                  0.25,
+                  [
+                    "neg",
+                    [
+                      "normalize",
+                      [
+                        "field",
+                        "price_in"
+                      ]
+                    ]
+                  ]
+                ],
+                [
+                  "scale",
+                  0.45,
+                  [
+                    "neg",
+                    [
+                      "normalize",
+                      [
+                        "field",
+                        "price_out"
+                      ]
+                    ]
+                  ]
+                ],
+                [
+                  "scale",
+                  0.2,
+                  [
+                    "field",
+                    "success_rate"
+                  ]
+                ],
+                [
+                  "scale",
+                  0.1,
+                  [
+                    "neg",
+                    [
+                      "normalize",
+                      [
+                        "field",
+                        "latency_ms"
+                      ]
+                    ]
+                  ]
+                ]
+              ],
+              [
+                "argmax"
+              ],
+              [
+                "id"
+              ],
+              [
+                "always",
+                {
+                  "action": "next_candidate"
+                }
+              ]
+            ],
+            "timeout_ms": 22000,
+            "first_token_timeout_ms": 7000
+          },
+          "plugin": "openai-compatible",
+          "address": "0x2bB088e4E6Fd1faBBd23d93F38D01f28a954A49c",
+          "provider": "llm-router",
+          "plugin_config": {
+            "api_url": "https://router.ygr.ai",
+            "api_key_env_var": "LLM_ROUTER_API_KEY"
+          },
+          "fallback_validator": "0x722474B013fA39E5aA8785f927dCeB0e3F89815B"
+        },
+        "genvm_result": {
+          "stderr": "Validator execution cancelled after quorum",
+          "stdout": "",
+          "raw_error": {
+            "fatal": false,
+            "causes": [
+              "VALIDATOR_QUORUM_REACHED"
+            ]
+          },
+          "error_code": "CONSENSUS_VALIDATOR_QUORUM_REACHED"
+        },
+        "contract_state": {},
+        "execution_stats": null,
+        "nondet_disagree": null,
+        "processing_time": 0,
+        "execution_result": "ERROR",
+        "contract_state_hash": null,
+        "pending_transactions": []
+      }
+    ],
+    "leader_receipt": [
+      {
+        "mode": "leader",
+        "vote": null,
+        "result": {
+          "raw": "AAA=",
+          "status": "return",
+          "payload": {
+            "raw": [
+              0
+            ],
+            "readable": "null"
+          }
+        },
+        "calldata": {
+          "base64": "FgRhcmdzFbQBb3JnYW5pemF0aW9uLXNhbWUtbmFtZQkGbWV0aG9kdGFzc2Vzc19hdHRlbXB0",
+          "raw": [
+            22,
+            4,
+            97,
+            114,
+            103,
+            115,
+            21,
+            180,
+            1,
+            111,
+            114,
+            103,
+            97,
+            110,
+            105,
+            122,
+            97,
+            116,
+            105,
+            111,
+            110,
+            45,
+            115,
+            97,
+            109,
+            101,
+            45,
+            110,
+            97,
+            109,
+            101,
+            9,
+            6,
+            109,
+            101,
+            116,
+            104,
+            111,
+            100,
+            116,
+            97,
+            115,
+            115,
+            101,
+            115,
+            115,
+            95,
+            97,
+            116,
+            116,
+            101,
+            109,
+            112,
+            116
+          ],
+          "readable": "{\"args\":[\"organization-same-name\",1],\"method\":\"assess_attempt\"}"
+        },
+        "gas_used": 0,
+        "eq_outputs": {
+          "0": {
+            "raw": "AGYVYWRlcXVhdGVfd2l0bmVzc19zZXRzFT4TZmllbGRzOmp1cmlzZGljdGlvbg3EBDFiZGQ1MmU0YmI4NmFkOGZmMGVkYWViMWYwMmE2YjE2OGY4OWQyYzUwNWUzZDMzNDljZmZhODYxMjkwMGNjM2Q6MTI3OjE0NBJmaWVsZHM6b2ZmaWNpYWxfaWQNxAQxYmRkNTJlNGJiODZhZDhmZjBlZGFlYjFmMDJhNmIxNjhmODlkMmM1MDVlM2QzMzQ5Y2ZmYTg2MTI5MDBjYzNkOjEwMToxMjcbZmxhZ3M6Y29udHJvbGxpbmdfZXhjZXB0aW9uBRlmbGFnczppZGVudGlmaWVyX3JlaXNzdWVkBQ9mbGFnczpyZWN1cnJpbmcFEmZsYWdzOnJlbGF0ZWRfb25seQUVZmxhZ3M6c2NvcGVfYW1iaWd1b3VzBT4TZmllbGRzOmp1cmlzZGljdGlvbg3EBGE3ZGExNWJlNTM3MWQxM2Q3NmNlNTg5MDcyMDAxOTAzNzU1N2I5MTc2YzY0ZWRiNzQwZTAwZDU0NTI1ZjYyYTY6MTI3OjE0NBJmaWVsZHM6b2ZmaWNpYWxfaWQNxARhN2RhMTViZTUzNzFkMTNkNzZjZTU4OTA3MjAwMTkwMzc1NTdiOTE3NmM2NGVkYjc0MGUwMGQ1NDUyNWY2MmE2OjEwMToxMjcbZmxhZ3M6Y29udHJvbGxpbmdfZXhjZXB0aW9uBRlmbGFnczppZGVudGlmaWVyX3JlaXNzdWVkBQ9mbGFnczpyZWN1cnJpbmcFEmZsYWdzOnJlbGF0ZWRfb25seQUVZmxhZ3M6c2NvcGVfYW1iaWd1b3VzBQxhdmFpbGFiaWxpdHlMQVZBSUxBQkxFFGNvbnRyb2xsaW5nX3J1bGVfaWRzHVxSMV9DT01QTEVURYwBUjJfRElTQ1JJTUlOQVRPUlN8UjZfTk9fTkFNRV9PTkxZCGNvdmVyYWdlEBBkaWZmZXJlbnRfZmllbGRzDVxvZmZpY2lhbF9pZA5kaXNjcmltaW5hdG9ycxUWDGp1cmlzZGljdGlvbhRuZwtvZmZpY2lhbF9pZGRyZWdpc3RyeTo5OTEWDGp1cmlzZGljdGlvbhRuZwtvZmZpY2lhbF9pZGRyZWdpc3RyeTo5OTIGcmVhc29utAFESVNDUklNSU5BVE9SX0NPTkZMSUNUCHJlbGF0aW9uRERJU1RJTkNUBXNjb3BlZG9yZ2FuaXphdGlvbgtzY29wZV9mbGFncxUuFWNvbnRyb2xsaW5nX2V4Y2VwdGlvbggTaWRlbnRpZmllcl9yZWlzc3VlZAgJcmVjdXJyaW5nCAxyZWxhdGVkX29ubHkID3Njb3BlX2FtYmlndW91cwguFWNvbnRyb2xsaW5nX2V4Y2VwdGlvbggTaWRlbnRpZmllcl9yZWlzc3VlZAgJcmVjdXJyaW5nCAxyZWxhdGVkX29ubHkID3Njb3BlX2FtYmlndW91cwgKdW5yZXNvbHZlZAUJd2l0bmVzc2VzFT4TZmllbGRzOmp1cmlzZGljdGlvbsQEMWJkZDUyZTRiYjg2YWQ4ZmYwZWRhZWIxZjAyYTZiMTY4Zjg5ZDJjNTA1ZTNkMzM0OWNmZmE4NjEyOTAwY2MzZDoxMjc6MTQ0EmZpZWxkczpvZmZpY2lhbF9pZMQEMWJkZDUyZTRiYjg2YWQ4ZmYwZWRhZWIxZjAyYTZiMTY4Zjg5ZDJjNTA1ZTNkMzM0OWNmZmE4NjEyOTAwY2MzZDoxMDE6MTI3G2ZsYWdzOmNvbnRyb2xsaW5nX2V4Y2VwdGlvbgQZZmxhZ3M6aWRlbnRpZmllcl9yZWlzc3VlZAQPZmxhZ3M6cmVjdXJyaW5nBBJmbGFnczpyZWxhdGVkX29ubHkEFWZsYWdzOnNjb3BlX2FtYmlndW91cwQ+E2ZpZWxkczpqdXJpc2RpY3Rpb27EBGE3ZGExNWJlNTM3MWQxM2Q3NmNlNTg5MDcyMDAxOTAzNzU1N2I5MTc2YzY0ZWRiNzQwZTAwZDU0NTI1ZjYyYTY6MTI3OjE0NBJmaWVsZHM6b2ZmaWNpYWxfaWTEBGE3ZGExNWJlNTM3MWQxM2Q3NmNlNTg5MDcyMDAxOTAzNzU1N2I5MTc2YzY0ZWRiNzQwZTAwZDU0NTI1ZjYyYTY6MTAxOjEyNxtmbGFnczpjb250cm9sbGluZ19leGNlcHRpb24EGWZsYWdzOmlkZW50aWZpZXJfcmVpc3N1ZWQED2ZsYWdzOnJlY3VycmluZwQSZmxhZ3M6cmVsYXRlZF9vbmx5BBVmbGFnczpzY29wZV9hbWJpZ3VvdXME",
+            "status": "return",
+            "payload": {
+              "raw": [
+                102,
+                21,
+                97,
+                100,
+                101,
+                113,
+                117,
+                97,
+                116,
+                101,
+                95,
+                119,
+                105,
+                116,
+                110,
+                101,
+                115,
+                115,
+                95,
+                115,
+                101,
+                116,
+                115,
+                21,
+                62,
+                19,
+                102,
+                105,
+                101,
+                108,
+                100,
+                115,
+                58,
+                106,
+                117,
+                114,
+                105,
+                115,
+                100,
+                105,
+                99,
+                116,
+                105,
+                111,
+                110,
+                13,
+                196,
+                4,
+                49,
+                98,
+                100,
+                100,
+                53,
+                50,
+                101,
+                52,
+                98,
+                98,
+                56,
+                54,
+                97,
+                100,
+                56,
+                102,
+                102,
+                48,
+                101,
+                100,
+                97,
+                101,
+                98,
+                49,
+                102,
+                48,
+                50,
+                97,
+                54,
+                98,
+                49,
+                54,
+                56,
+                102,
+                56,
+                57,
+                100,
+                50,
+                99,
+                53,
+                48,
+                53,
+                101,
+                51,
+                100,
+                51,
+                51,
+                52,
+                57,
+                99,
+                102,
+                102,
+                97,
+                56,
+                54,
+                49,
+                50,
+                57,
+                48,
+                48,
+                99,
+                99,
+                51,
+                100,
+                58,
+                49,
+                50,
+                55,
+                58,
+                49,
+                52,
+                52,
+                18,
+                102,
+                105,
+                101,
+                108,
+                100,
+                115,
+                58,
+                111,
+                102,
+                102,
+                105,
+                99,
+                105,
+                97,
+                108,
+                95,
+                105,
+                100,
+                13,
+                196,
+                4,
+                49,
+                98,
+                100,
+                100,
+                53,
+                50,
+                101,
+                52,
+                98,
+                98,
+                56,
+                54,
+                97,
+                100,
+                56,
+                102,
+                102,
+                48,
+                101,
+                100,
+                97,
+                101,
+                98,
+                49,
+                102,
+                48,
+                50,
+                97,
+                54,
+                98,
+                49,
+                54,
+                56,
+                102,
+                56,
+                57,
+                100,
+                50,
+                99,
+                53,
+                48,
+                53,
+                101,
+                51,
+                100,
+                51,
+                51,
+                52,
+                57,
+                99,
+                102,
+                102,
+                97,
+                56,
+                54,
+                49,
+                50,
+                57,
+                48,
+                48,
+                99,
+                99,
+                51,
+                100,
+                58,
+                49,
+                48,
+                49,
+                58,
+                49,
+                50,
+                55,
+                27,
+                102,
+                108,
+                97,
+                103,
+                115,
+                58,
+                99,
+                111,
+                110,
+                116,
+                114,
+                111,
+                108,
+                108,
+                105,
+                110,
+                103,
+                95,
+                101,
+                120,
+                99,
+                101,
+                112,
+                116,
+                105,
+                111,
+                110,
+                5,
+                25,
+                102,
+                108,
+                97,
+                103,
+                115,
+                58,
+                105,
+                100,
+                101,
+                110,
+                116,
+                105,
+                102,
+                105,
+                101,
+                114,
+                95,
+                114,
+                101,
+                105,
+                115,
+                115,
+                117,
+                101,
+                100,
+                5,
+                15,
+                102,
+                108,
+                97,
+                103,
+                115,
+                58,
+                114,
+                101,
+                99,
+                117,
+                114,
+                114,
+                105,
+                110,
+                103,
+                5,
+                18,
+                102,
+                108,
+                97,
+                103,
+                115,
+                58,
+                114,
+                101,
+                108,
+                97,
+                116,
+                101,
+                100,
+                95,
+                111,
+                110,
+                108,
+                121,
+                5,
+                21,
+                102,
+                108,
+                97,
+                103,
+                115,
+                58,
+                115,
+                99,
+                111,
+                112,
+                101,
+                95,
+                97,
+                109,
+                98,
+                105,
+                103,
+                117,
+                111,
+                117,
+                115,
+                5,
+                62,
+                19,
+                102,
+                105,
+                101,
+                108,
+                100,
+                115,
+                58,
+                106,
+                117,
+                114,
+                105,
+                115,
+                100,
+                105,
+                99,
+                116,
+                105,
+                111,
+                110,
+                13,
+                196,
+                4,
+                97,
+                55,
+                100,
+                97,
+                49,
+                53,
+                98,
+                101,
+                53,
+                51,
+                55,
+                49,
+                100,
+                49,
+                51,
+                100,
+                55,
+                54,
+                99,
+                101,
+                53,
+                56,
+                57,
+                48,
+                55,
+                50,
+                48,
+                48,
+                49,
+                57,
+                48,
+                51,
+                55,
+                53,
+                53,
+                55,
+                98,
+                57,
+                49,
+                55,
+                54,
+                99,
+                54,
+                52,
+                101,
+                100,
+                98,
+                55,
+                52,
+                48,
+                101,
+                48,
+                48,
+                100,
+                53,
+                52,
+                53,
+                50,
+                53,
+                102,
+                54,
+                50,
+                97,
+                54,
+                58,
+                49,
+                50,
+                55,
+                58,
+                49,
+                52,
+                52,
+                18,
+                102,
+                105,
+                101,
+                108,
+                100,
+                115,
+                58,
+                111,
+                102,
+                102,
+                105,
+                99,
+                105,
+                97,
+                108,
+                95,
+                105,
+                100,
+                13,
+                196,
+                4,
+                97,
+                55,
+                100,
+                97,
+                49,
+                53,
+                98,
+                101,
+                53,
+                51,
+                55,
+                49,
+                100,
+                49,
+                51,
+                100,
+                55,
+                54,
+                99,
+                101,
+                53,
+                56,
+                57,
+                48,
+                55,
+                50,
+                48,
+                48,
+                49,
+                57,
+                48,
+                51,
+                55,
+                53,
+                53,
+                55,
+                98,
+                57,
+                49,
+                55,
+                54,
+                99,
+                54,
+                52,
+                101,
+                100,
+                98,
+                55,
+                52,
+                48,
+                101,
+                48,
+                48,
+                100,
+                53,
+                52,
+                53,
+                50,
+                53,
+                102,
+                54,
+                50,
+                97,
+                54,
+                58,
+                49,
+                48,
+                49,
+                58,
+                49,
+                50,
+                55,
+                27,
+                102,
+                108,
+                97,
+                103,
+                115,
+                58,
+                99,
+                111,
+                110,
+                116,
+                114,
+                111,
+                108,
+                108,
+                105,
+                110,
+                103,
+                95,
+                101,
+                120,
+                99,
+                101,
+                112,
+                116,
+                105,
+                111,
+                110,
+                5,
+                25,
+                102,
+                108,
+                97,
+                103,
+                115,
+                58,
+                105,
+                100,
+                101,
+                110,
+                116,
+                105,
+                102,
+                105,
+                101,
+                114,
+                95,
+                114,
+                101,
+                105,
+                115,
+                115,
+                117,
+                101,
+                100,
+                5,
+                15,
+                102,
+                108,
+                97,
+                103,
+                115,
+                58,
+                114,
+                101,
+                99,
+                117,
+                114,
+                114,
+                105,
+                110,
+                103,
+                5,
+                18,
+                102,
+                108,
+                97,
+                103,
+                115,
+                58,
+                114,
+                101,
+                108,
+                97,
+                116,
+                101,
+                100,
+                95,
+                111,
+                110,
+                108,
+                121,
+                5,
+                21,
+                102,
+                108,
+                97,
+                103,
+                115,
+                58,
+                115,
+                99,
+                111,
+                112,
+                101,
+                95,
+                97,
+                109,
+                98,
+                105,
+                103,
+                117,
+                111,
+                117,
+                115,
+                5,
+                12,
+                97,
+                118,
+                97,
+                105,
+                108,
+                97,
+                98,
+                105,
+                108,
+                105,
+                116,
+                121,
+                76,
+                65,
+                86,
+                65,
+                73,
+                76,
+                65,
+                66,
+                76,
+                69,
+                20,
+                99,
+                111,
+                110,
+                116,
+                114,
+                111,
+                108,
+                108,
+                105,
+                110,
+                103,
+                95,
+                114,
+                117,
+                108,
+                101,
+                95,
+                105,
+                100,
+                115,
+                29,
+                92,
+                82,
+                49,
+                95,
+                67,
+                79,
+                77,
+                80,
+                76,
+                69,
+                84,
+                69,
+                140,
+                1,
+                82,
+                50,
+                95,
+                68,
+                73,
+                83,
+                67,
+                82,
+                73,
+                77,
+                73,
+                78,
+                65,
+                84,
+                79,
+                82,
+                83,
+                124,
+                82,
+                54,
+                95,
+                78,
+                79,
+                95,
+                78,
+                65,
+                77,
+                69,
+                95,
+                79,
+                78,
+                76,
+                89,
+                8,
+                99,
+                111,
+                118,
+                101,
+                114,
+                97,
+                103,
+                101,
+                16,
+                16,
+                100,
+                105,
+                102,
+                102,
+                101,
+                114,
+                101,
+                110,
+                116,
+                95,
+                102,
+                105,
+                101,
+                108,
+                100,
+                115,
+                13,
+                92,
+                111,
+                102,
+                102,
+                105,
+                99,
+                105,
+                97,
+                108,
+                95,
+                105,
+                100,
+                14,
+                100,
+                105,
+                115,
+                99,
+                114,
+                105,
+                109,
+                105,
+                110,
+                97,
+                116,
+                111,
+                114,
+                115,
+                21,
+                22,
+                12,
+                106,
+                117,
+                114,
+                105,
+                115,
+                100,
+                105,
+                99,
+                116,
+                105,
+                111,
+                110,
+                20,
+                110,
+                103,
+                11,
+                111,
+                102,
+                102,
+                105,
+                99,
+                105,
+                97,
+                108,
+                95,
+                105,
+                100,
+                100,
+                114,
+                101,
+                103,
+                105,
+                115,
+                116,
+                114,
+                121,
+                58,
+                57,
+                57,
+                49,
+                22,
+                12,
+                106,
+                117,
+                114,
+                105,
+                115,
+                100,
+                105,
+                99,
+                116,
+                105,
+                111,
+                110,
+                20,
+                110,
+                103,
+                11,
+                111,
+                102,
+                102,
+                105,
+                99,
+                105,
+                97,
+                108,
+                95,
+                105,
+                100,
+                100,
+                114,
+                101,
+                103,
+                105,
+                115,
+                116,
+                114,
+                121,
+                58,
+                57,
+                57,
+                50,
+                6,
+                114,
+                101,
+                97,
+                115,
+                111,
+                110,
+                180,
+                1,
+                68,
+                73,
+                83,
+                67,
+                82,
+                73,
+                77,
+                73,
+                78,
+                65,
+                84,
+                79,
+                82,
+                95,
+                67,
+                79,
+                78,
+                70,
+                76,
+                73,
+                67,
+                84,
+                8,
+                114,
+                101,
+                108,
+                97,
+                116,
+                105,
+                111,
+                110,
+                68,
+                68,
+                73,
+                83,
+                84,
+                73,
+                78,
+                67,
+                84,
+                5,
+                115,
+                99,
+                111,
+                112,
+                101,
+                100,
+                111,
+                114,
+                103,
+                97,
+                110,
+                105,
+                122,
+                97,
+                116,
+                105,
+                111,
+                110,
+                11,
+                115,
+                99,
+                111,
+                112,
+                101,
+                95,
+                102,
+                108,
+                97,
+                103,
+                115,
+                21,
+                46,
+                21,
+                99,
+                111,
+                110,
+                116,
+                114,
+                111,
+                108,
+                108,
+                105,
+                110,
+                103,
+                95,
+                101,
+                120,
+                99,
+                101,
+                112,
+                116,
+                105,
+                111,
+                110,
+                8,
+                19,
+                105,
+                100,
+                101,
+                110,
+                116,
+                105,
+                102,
+                105,
+                101,
+                114,
+                95,
+                114,
+                101,
+                105,
+                115,
+                115,
+                117,
+                101,
+                100,
+                8,
+                9,
+                114,
+                101,
+                99,
+                117,
+                114,
+                114,
+                105,
+                110,
+                103,
+                8,
+                12,
+                114,
+                101,
+                108,
+                97,
+                116,
+                101,
+                100,
+                95,
+                111,
+                110,
+                108,
+                121,
+                8,
+                15,
+                115,
+                99,
+                111,
+                112,
+                101,
+                95,
+                97,
+                109,
+                98,
+                105,
+                103,
+                117,
+                111,
+                117,
+                115,
+                8,
+                46,
+                21,
+                99,
+                111,
+                110,
+                116,
+                114,
+                111,
+                108,
+                108,
+                105,
+                110,
+                103,
+                95,
+                101,
+                120,
+                99,
+                101,
+                112,
+                116,
+                105,
+                111,
+                110,
+                8,
+                19,
+                105,
+                100,
+                101,
+                110,
+                116,
+                105,
+                102,
+                105,
+                101,
+                114,
+                95,
+                114,
+                101,
+                105,
+                115,
+                115,
+                117,
+                101,
+                100,
+                8,
+                9,
+                114,
+                101,
+                99,
+                117,
+                114,
+                114,
+                105,
+                110,
+                103,
+                8,
+                12,
+                114,
+                101,
+                108,
+                97,
+                116,
+                101,
+                100,
+                95,
+                111,
+                110,
+                108,
+                121,
+                8,
+                15,
+                115,
+                99,
+                111,
+                112,
+                101,
+                95,
+                97,
+                109,
+                98,
+                105,
+                103,
+                117,
+                111,
+                117,
+                115,
+                8,
+                10,
+                117,
+                110,
+                114,
+                101,
+                115,
+                111,
+                108,
+                118,
+                101,
+                100,
+                5,
+                9,
+                119,
+                105,
+                116,
+                110,
+                101,
+                115,
+                115,
+                101,
+                115,
+                21,
+                62,
+                19,
+                102,
+                105,
+                101,
+                108,
+                100,
+                115,
+                58,
+                106,
+                117,
+                114,
+                105,
+                115,
+                100,
+                105,
+                99,
+                116,
+                105,
+                111,
+                110,
+                196,
+                4,
+                49,
+                98,
+                100,
+                100,
+                53,
+                50,
+                101,
+                52,
+                98,
+                98,
+                56,
+                54,
+                97,
+                100,
+                56,
+                102,
+                102,
+                48,
+                101,
+                100,
+                97,
+                101,
+                98,
+                49,
+                102,
+                48,
+                50,
+                97,
+                54,
+                98,
+                49,
+                54,
+                56,
+                102,
+                56,
+                57,
+                100,
+                50,
+                99,
+                53,
+                48,
+                53,
+                101,
+                51,
+                100,
+                51,
+                51,
+                52,
+                57,
+                99,
+                102,
+                102,
+                97,
+                56,
+                54,
+                49,
+                50,
+                57,
+                48,
+                48,
+                99,
+                99,
+                51,
+                100,
+                58,
+                49,
+                50,
+                55,
+                58,
+                49,
+                52,
+                52,
+                18,
+                102,
+                105,
+                101,
+                108,
+                100,
+                115,
+                58,
+                111,
+                102,
+                102,
+                105,
+                99,
+                105,
+                97,
+                108,
+                95,
+                105,
+                100,
+                196,
+                4,
+                49,
+                98,
+                100,
+                100,
+                53,
+                50,
+                101,
+                52,
+                98,
+                98,
+                56,
+                54,
+                97,
+                100,
+                56,
+                102,
+                102,
+                48,
+                101,
+                100,
+                97,
+                101,
+                98,
+                49,
+                102,
+                48,
+                50,
+                97,
+                54,
+                98,
+                49,
+                54,
+                56,
+                102,
+                56,
+                57,
+                100,
+                50,
+                99,
+                53,
+                48,
+                53,
+                101,
+                51,
+                100,
+                51,
+                51,
+                52,
+                57,
+                99,
+                102,
+                102,
+                97,
+                56,
+                54,
+                49,
+                50,
+                57,
+                48,
+                48,
+                99,
+                99,
+                51,
+                100,
+                58,
+                49,
+                48,
+                49,
+                58,
+                49,
+                50,
+                55,
+                27,
+                102,
+                108,
+                97,
+                103,
+                115,
+                58,
+                99,
+                111,
+                110,
+                116,
+                114,
+                111,
+                108,
+                108,
+                105,
+                110,
+                103,
+                95,
+                101,
+                120,
+                99,
+                101,
+                112,
+                116,
+                105,
+                111,
+                110,
+                4,
+                25,
+                102,
+                108,
+                97,
+                103,
+                115,
+                58,
+                105,
+                100,
+                101,
+                110,
+                116,
+                105,
+                102,
+                105,
+                101,
+                114,
+                95,
+                114,
+                101,
+                105,
+                115,
+                115,
+                117,
+                101,
+                100,
+                4,
+                15,
+                102,
+                108,
+                97,
+                103,
+                115,
+                58,
+                114,
+                101,
+                99,
+                117,
+                114,
+                114,
+                105,
+                110,
+                103,
+                4,
+                18,
+                102,
+                108,
+                97,
+                103,
+                115,
+                58,
+                114,
+                101,
+                108,
+                97,
+                116,
+                101,
+                100,
+                95,
+                111,
+                110,
+                108,
+                121,
+                4,
+                21,
+                102,
+                108,
+                97,
+                103,
+                115,
+                58,
+                115,
+                99,
+                111,
+                112,
+                101,
+                95,
+                97,
+                109,
+                98,
+                105,
+                103,
+                117,
+                111,
+                117,
+                115,
+                4,
+                62,
+                19,
+                102,
+                105,
+                101,
+                108,
+                100,
+                115,
+                58,
+                106,
+                117,
+                114,
+                105,
+                115,
+                100,
+                105,
+                99,
+                116,
+                105,
+                111,
+                110,
+                196,
+                4,
+                97,
+                55,
+                100,
+                97,
+                49,
+                53,
+                98,
+                101,
+                53,
+                51,
+                55,
+                49,
+                100,
+                49,
+                51,
+                100,
+                55,
+                54,
+                99,
+                101,
+                53,
+                56,
+                57,
+                48,
+                55,
+                50,
+                48,
+                48,
+                49,
+                57,
+                48,
+                51,
+                55,
+                53,
+                53,
+                55,
+                98,
+                57,
+                49,
+                55,
+                54,
+                99,
+                54,
+                52,
+                101,
+                100,
+                98,
+                55,
+                52,
+                48,
+                101,
+                48,
+                48,
+                100,
+                53,
+                52,
+                53,
+                50,
+                53,
+                102,
+                54,
+                50,
+                97,
+                54,
+                58,
+                49,
+                50,
+                55,
+                58,
+                49,
+                52,
+                52,
+                18,
+                102,
+                105,
+                101,
+                108,
+                100,
+                115,
+                58,
+                111,
+                102,
+                102,
+                105,
+                99,
+                105,
+                97,
+                108,
+                95,
+                105,
+                100,
+                196,
+                4,
+                97,
+                55,
+                100,
+                97,
+                49,
+                53,
+                98,
+                101,
+                53,
+                51,
+                55,
+                49,
+                100,
+                49,
+                51,
+                100,
+                55,
+                54,
+                99,
+                101,
+                53,
+                56,
+                57,
+                48,
+                55,
+                50,
+                48,
+                48,
+                49,
+                57,
+                48,
+                51,
+                55,
+                53,
+                53,
+                55,
+                98,
+                57,
+                49,
+                55,
+                54,
+                99,
+                54,
+                52,
+                101,
+                100,
+                98,
+                55,
+                52,
+                48,
+                101,
+                48,
+                48,
+                100,
+                53,
+                52,
+                53,
+                50,
+                53,
+                102,
+                54,
+                50,
+                97,
+                54,
+                58,
+                49,
+                48,
+                49,
+                58,
+                49,
+                50,
+                55,
+                27,
+                102,
+                108,
+                97,
+                103,
+                115,
+                58,
+                99,
+                111,
+                110,
+                116,
+                114,
+                111,
+                108,
+                108,
+                105,
+                110,
+                103,
+                95,
+                101,
+                120,
+                99,
+                101,
+                112,
+                116,
+                105,
+                111,
+                110,
+                4,
+                25,
+                102,
+                108,
+                97,
+                103,
+                115,
+                58,
+                105,
+                100,
+                101,
+                110,
+                116,
+                105,
+                102,
+                105,
+                101,
+                114,
+                95,
+                114,
+                101,
+                105,
+                115,
+                115,
+                117,
+                101,
+                100,
+                4,
+                15,
+                102,
+                108,
+                97,
+                103,
+                115,
+                58,
+                114,
+                101,
+                99,
+                117,
+                114,
+                114,
+                105,
+                110,
+                103,
+                4,
+                18,
+                102,
+                108,
+                97,
+                103,
+                115,
+                58,
+                114,
+                101,
+                108,
+                97,
+                116,
+                101,
+                100,
+                95,
+                111,
+                110,
+                108,
+                121,
+                4,
+                21,
+                102,
+                108,
+                97,
+                103,
+                115,
+                58,
+                115,
+                99,
+                111,
+                112,
+                101,
+                95,
+                97,
+                109,
+                98,
+                105,
+                103,
+                117,
+                111,
+                117,
+                115,
+                4
+              ],
+              "readable": "{\"adequate_witness_sets\":[{\"fields:jurisdiction\":[\"1bdd52e4bb86ad8ff0edaeb1f02a6b168f89d2c505e3d3349cffa8612900cc3d:127:144\"],\"fields:official_id\":[\"1bdd52e4bb86ad8ff0edaeb1f02a6b168f89d2c505e3d3349cffa8612900cc3d:101:127\"],\"flags:controlling_exception\":[],\"flags:identifier_reissued\":[],\"flags:recurring\":[],\"flags:related_only\":[],\"flags:scope_ambiguous\":[]},{\"fields:jurisdiction\":[\"a7da15be5371d13d76ce5890720019037557b9176c64edb740e00d54525f62a6:127:144\"],\"fields:official_id\":[\"a7da15be5371d13d76ce5890720019037557b9176c64edb740e00d54525f62a6:101:127\"],\"flags:controlling_exception\":[],\"flags:identifier_reissued\":[],\"flags:recurring\":[],\"flags:related_only\":[],\"flags:scope_ambiguous\":[]}],\"availability\":\"AVAILABLE\",\"controlling_rule_ids\":[\"R1_COMPLETE\",\"R2_DISCRIMINATORS\",\"R6_NO_NAME_ONLY\"],\"coverage\":true,\"different_fields\":[\"official_id\"],\"discriminators\":[{\"jurisdiction\":\"ng\",\"official_id\":\"registry:991\"},{\"jurisdiction\":\"ng\",\"official_id\":\"registry:992\"}],\"reason\":\"DISCRIMINATOR_CONFLICT\",\"relation\":\"DISTINCT\",\"scope\":\"organization\",\"scope_flags\":[{\"controlling_exception\":false,\"identifier_reissued\":false,\"recurring\":false,\"related_only\":false,\"scope_ambiguous\":false},{\"controlling_exception\":false,\"identifier_reissued\":false,\"recurring\":false,\"related_only\":false,\"scope_ambiguous\":false}],\"unresolved\":[],\"witnesses\":[{\"fields:jurisdiction\":\"1bdd52e4bb86ad8ff0edaeb1f02a6b168f89d2c505e3d3349cffa8612900cc3d:127:144\",\"fields:official_id\":\"1bdd52e4bb86ad8ff0edaeb1f02a6b168f89d2c505e3d3349cffa8612900cc3d:101:127\",\"flags:controlling_exception\":\"\",\"flags:identifier_reissued\":\"\",\"flags:recurring\":\"\",\"flags:related_only\":\"\",\"flags:scope_ambiguous\":\"\"},{\"fields:jurisdiction\":\"a7da15be5371d13d76ce5890720019037557b9176c64edb740e00d54525f62a6:127:144\",\"fields:official_id\":\"a7da15be5371d13d76ce5890720019037557b9176c64edb740e00d54525f62a6:101:127\",\"flags:controlling_exception\":\"\",\"flags:identifier_reissued\":\"\",\"flags:recurring\":\"\",\"flags:related_only\":\"\",\"flags:scope_ambiguous\":\"\"}]}"
+            }
+          }
+        },
+        "node_config": {
+          "stake": 100,
+          "address": "0x722474B013fA39E5aA8785f927dCeB0e3F89815B",
+          "primary_model": {
+            "model": "anthropic/claude-sonnet-4.6",
+            "config": {
+              "models": [
+                "anthropic/claude-sonnet-4.6",
+                "openai/gpt-5.4",
+                "google/gemini-3-flash-preview"
+              ]
+            },
+            "plugin": "openai-compatible",
+            "provider": "openrouter",
+            "plugin_config": {
+              "api_url": "https://openrouter.ai/api",
+              "api_key_env_var": "OPENROUTERAPIKEY"
+            },
+            "fallback_validator": "0xf1EAD5E5f876eae701eF1881b42861079cd9A287"
+          },
+          "secondary_model": {
+            "model": "policy:prd-kimi",
+            "config": {
+              "policy_ir": [
+                "policy",
+                [
+                  "and",
+                  [
+                    "meets_req"
+                  ],
+                  [
+                    "not",
+                    [
+                      "is",
+                      "disabled"
+                    ]
+                  ],
+                  [
+                    "cmp",
+                    "success_rate",
+                    "ge",
+                    0.2
+                  ],
+                  [
+                    "or",
+                    [
+                      "family_eq",
+                      "kimi-k2.7-code"
+                    ],
+                    [
+                      "family_eq",
+                      "claude-sonnet-4-6"
+                    ],
+                    [
+                      "family_eq",
+                      "gpt-5.4"
+                    ]
+                  ]
+                ],
+                [
+                  "add",
+                  [
+                    "scale",
+                    100,
+                    [
+                      "gate",
+                      [
+                        "family_eq",
+                        "kimi-k2.7-code"
+                      ],
+                      [
+                        "lit",
+                        1
+                      ]
+                    ]
+                  ],
+                  [
+                    "scale",
+                    10,
+                    [
+                      "gate",
+                      [
+                        "family_eq",
+                        "claude-sonnet-4-6"
+                      ],
+                      [
+                        "lit",
+                        1
+                      ]
+                    ]
+                  ],
+                  [
+                    "scale",
+                    1,
+                    [
+                      "gate",
+                      [
+                        "family_eq",
+                        "gpt-5.4"
+                      ],
+                      [
+                        "lit",
+                        1
+                      ]
+                    ]
+                  ],
+                  [
+                    "scale",
+                    0.25,
+                    [
+                      "neg",
+                      [
+                        "normalize",
+                        [
+                          "field",
+                          "price_in"
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "scale",
+                    0.45,
+                    [
+                      "neg",
+                      [
+                        "normalize",
+                        [
+                          "field",
+                          "price_out"
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "scale",
+                    0.2,
+                    [
+                      "field",
+                      "success_rate"
+                    ]
+                  ],
+                  [
+                    "scale",
+                    0.1,
+                    [
+                      "neg",
+                      [
+                        "normalize",
+                        [
+                          "field",
+                          "latency_ms"
+                        ]
+                      ]
+                    ]
+                  ]
+                ],
+                [
+                  "argmax"
+                ],
+                [
+                  "id"
+                ],
+                [
+                  "always",
+                  {
+                    "action": "next_candidate"
+                  }
+                ]
+              ],
+              "timeout_ms": 22000,
+              "first_token_timeout_ms": 7000
+            },
+            "plugin": "openai-compatible",
+            "address": "0xf1EAD5E5f876eae701eF1881b42861079cd9A287",
+            "provider": "llm-router",
+            "plugin_config": {
+              "api_url": "https://router.ygr.ai",
+              "api_key_env_var": "LLM_ROUTER_API_KEY"
+            }
+          }
+        },
+        "genvm_result": {
+          "stderr": "/py/libs/genlayer/gl/_internal/storage.py:21: UserWarning: Detected pickling storage class. Reading storage in nondet mode is not supported\n  warnings.warn(\n",
+          "stdout": "",
+          "raw_error": null,
+          "error_code": null,
+          "error_description": null
+        },
+        "execution_stats": {
+          "llm": {
+            "tokens": {
+              "node-0x722474B013fA39E5aA8785f927dCeB0e3F89815B/anthropic/claude-sonnet-4.6": {
+                "input": 1093,
+                "total": 1605,
+                "output": 512
+              }
+            }
+          },
+          "call_counts": {
+            "CONSUME_FUEL": 1,
+            "STORAGE_READ": 285,
+            "NOTIFY_FINISHED": 1,
+            "REMAINING_FUEL_AS_GEN": 1
+          },
+          "host_first_method": "STORAGE_READ",
+          "delete_genvm_status": 200,
+          "host_loop_entered_s": 2043.827566425,
+          "host_loop_enter_wait_ms": 5,
+          "host_time_per_method_ms": {
+            "CONSUME_FUEL": 0,
+            "STORAGE_READ": 62,
+            "REMAINING_FUEL_AS_GEN": 0
+          },
+          "host_total_handling_time_ms": 62,
+          "manager_run_attempt_success": {
+            "attempt": 0,
+            "duration_ms": 3
+          },
+          "host_first_method_received_s": 2043.827694767,
+          "host_accept_to_first_method_ms": 0
+        },
+        "nondet_disagree": null,
+        "processing_time": 6621,
+        "execution_result": "SUCCESS",
+        "contract_state_hash": "ef71fe479ed8e930d5d6fe769f0ad9c0b8232081436d35525595c030d7c5fa88",
+        "pending_transactions": [
+          {
+            "on": "finalized",
+            "value": 0,
+            "address": "0x5391D96ddEc55ce5F37E4fA7c6c7abC60b76a636",
+            "calldata": "FgRhcmdzDbQBb3JnYW5pemF0aW9uLXNhbWUtbmFtZQZtZXRob2SEAWNvbmZpcm1fcmVsYXRpb24="
+          }
+        ]
+      },
+      {
+        "mode": "validator",
+        "vote": "agree",
+        "result": {
+          "raw": "AAA=",
+          "status": "return",
+          "payload": {
+            "raw": [
+              0
+            ],
+            "readable": "null"
+          }
+        },
+        "calldata": {
+          "base64": "FgRhcmdzFbQBb3JnYW5pemF0aW9uLXNhbWUtbmFtZQkGbWV0aG9kdGFzc2Vzc19hdHRlbXB0",
+          "raw": [
+            22,
+            4,
+            97,
+            114,
+            103,
+            115,
+            21,
+            180,
+            1,
+            111,
+            114,
+            103,
+            97,
+            110,
+            105,
+            122,
+            97,
+            116,
+            105,
+            111,
+            110,
+            45,
+            115,
+            97,
+            109,
+            101,
+            45,
+            110,
+            97,
+            109,
+            101,
+            9,
+            6,
+            109,
+            101,
+            116,
+            104,
+            111,
+            100,
+            116,
+            97,
+            115,
+            115,
+            101,
+            115,
+            115,
+            95,
+            97,
+            116,
+            116,
+            101,
+            109,
+            112,
+            116
+          ],
+          "readable": "{\"args\":[\"organization-same-name\",1],\"method\":\"assess_attempt\"}"
+        },
+        "gas_used": 0,
+        "node_config": {
+          "stake": 100,
+          "address": "0x722474B013fA39E5aA8785f927dCeB0e3F89815B",
+          "primary_model": {
+            "model": "anthropic/claude-sonnet-4.6",
+            "config": {
+              "models": [
+                "anthropic/claude-sonnet-4.6",
+                "openai/gpt-5.4",
+                "google/gemini-3-flash-preview"
+              ]
+            },
+            "plugin": "openai-compatible",
+            "provider": "openrouter",
+            "plugin_config": {
+              "api_url": "https://openrouter.ai/api",
+              "api_key_env_var": "OPENROUTERAPIKEY"
+            },
+            "fallback_validator": "0xf1EAD5E5f876eae701eF1881b42861079cd9A287"
+          },
+          "secondary_model": {
+            "model": "policy:prd-kimi",
+            "config": {
+              "policy_ir": [
+                "policy",
+                [
+                  "and",
+                  [
+                    "meets_req"
+                  ],
+                  [
+                    "not",
+                    [
+                      "is",
+                      "disabled"
+                    ]
+                  ],
+                  [
+                    "cmp",
+                    "success_rate",
+                    "ge",
+                    0.2
+                  ],
+                  [
+                    "or",
+                    [
+                      "family_eq",
+                      "kimi-k2.7-code"
+                    ],
+                    [
+                      "family_eq",
+                      "claude-sonnet-4-6"
+                    ],
+                    [
+                      "family_eq",
+                      "gpt-5.4"
+                    ]
+                  ]
+                ],
+                [
+                  "add",
+                  [
+                    "scale",
+                    100,
+                    [
+                      "gate",
+                      [
+                        "family_eq",
+                        "kimi-k2.7-code"
+                      ],
+                      [
+                        "lit",
+                        1
+                      ]
+                    ]
+                  ],
+                  [
+                    "scale",
+                    10,
+                    [
+                      "gate",
+                      [
+                        "family_eq",
+                        "claude-sonnet-4-6"
+                      ],
+                      [
+                        "lit",
+                        1
+                      ]
+                    ]
+                  ],
+                  [
+                    "scale",
+                    1,
+                    [
+                      "gate",
+                      [
+                        "family_eq",
+                        "gpt-5.4"
+                      ],
+                      [
+                        "lit",
+                        1
+                      ]
+                    ]
+                  ],
+                  [
+                    "scale",
+                    0.25,
+                    [
+                      "neg",
+                      [
+                        "normalize",
+                        [
+                          "field",
+                          "price_in"
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "scale",
+                    0.45,
+                    [
+                      "neg",
+                      [
+                        "normalize",
+                        [
+                          "field",
+                          "price_out"
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "scale",
+                    0.2,
+                    [
+                      "field",
+                      "success_rate"
+                    ]
+                  ],
+                  [
+                    "scale",
+                    0.1,
+                    [
+                      "neg",
+                      [
+                        "normalize",
+                        [
+                          "field",
+                          "latency_ms"
+                        ]
+                      ]
+                    ]
+                  ]
+                ],
+                [
+                  "argmax"
+                ],
+                [
+                  "id"
+                ],
+                [
+                  "always",
+                  {
+                    "action": "next_candidate"
+                  }
+                ]
+              ],
+              "timeout_ms": 22000,
+              "first_token_timeout_ms": 7000
+            },
+            "plugin": "openai-compatible",
+            "address": "0xf1EAD5E5f876eae701eF1881b42861079cd9A287",
+            "provider": "llm-router",
+            "plugin_config": {
+              "api_url": "https://router.ygr.ai",
+              "api_key_env_var": "LLM_ROUTER_API_KEY"
+            }
+          }
+        },
+        "genvm_result": {
+          "stderr": "/py/libs/genlayer/gl/_internal/storage.py:21: UserWarning: Detected pickling storage class. Reading storage in nondet mode is not supported\n  warnings.warn(\n",
+          "stdout": "",
+          "raw_error": null,
+          "error_code": null,
+          "error_description": null
+        },
+        "execution_stats": {
+          "llm": {
+            "tokens": {
+              "node-0x722474B013fA39E5aA8785f927dCeB0e3F89815B/anthropic/claude-sonnet-4.6": {
+                "input": 1093,
+                "total": 1605,
+                "output": 512
+              }
+            }
+          },
+          "call_counts": {
+            "CONSUME_FUEL": 1,
+            "STORAGE_READ": 285,
+            "NOTIFY_FINISHED": 1,
+            "REMAINING_FUEL_AS_GEN": 1
+          },
+          "host_first_method": "STORAGE_READ",
+          "delete_genvm_status": 200,
+          "host_loop_entered_s": 2050.663172751,
+          "host_loop_enter_wait_ms": 9,
+          "host_time_per_method_ms": {
+            "CONSUME_FUEL": 0,
+            "STORAGE_READ": 150,
+            "REMAINING_FUEL_AS_GEN": 0
+          },
+          "host_total_handling_time_ms": 150,
+          "manager_run_attempt_success": {
+            "attempt": 0,
+            "duration_ms": 6
+          },
+          "host_first_method_received_s": 2050.663331413,
+          "host_accept_to_first_method_ms": 0
+        },
+        "nondet_disagree": null,
+        "processing_time": 7744,
+        "execution_result": "SUCCESS",
+        "contract_state_hash": "ef71fe479ed8e930d5d6fe769f0ad9c0b8232081436d35525595c030d7c5fa88",
+        "pending_transactions": [
+          {
+            "on": "finalized",
+            "value": 0,
+            "address": "0x5391D96ddEc55ce5F37E4fA7c6c7abC60b76a636",
+            "calldata": "FgRhcmdzDbQBb3JnYW5pemF0aW9uLXNhbWUtbmFtZQZtZXRob2SEAWNvbmZpcm1fcmVsYXRpb24="
+          }
+        ]
+      }
+    ]
+  },
+  "gaslimit": 5,
+  "nonce": 5,
+  "r": null,
+  "s": null,
+  "v": null,
+  "created_at": "2026-11-11T14:59:32.160261+00:00",
+  "leader_only": false,
+  "execution_mode": "NORMAL",
+  "origin_address": "0x5391D96ddEc55ce5F37E4fA7c6c7abC60b76a636",
+  "triggered_by": "0xb661b6d9c8e5c0c865624c0cb1de62bb8d7ed3173a536ee0efe8b825673d1b02",
+  "triggered_on": "finalized",
+  "triggered_transactions": [
+    "0x50f6b3c5d7c2a7ac11979fb3a0a6fdb83a1b8a818d4a6b793713e37526e82531"
+  ],
+  "appealed": false,
+  "timestamp_awaiting_finalization": 1794409306,
+  "appeal_failed": 0,
+  "appeal_undetermined": false,
+  "consensus_history": {
+    "consensus_results": [
+      {
+        "monitoring": {
+          "PENDING": 1794409284.3999174,
+          "ACCEPTED": 1794409306.5164566,
+          "PROPOSING": 1794409284.4501553,
+          "REVEALING": 1794409306.4594483,
+          "COMMITTING": 1794409291.4848163,
+          "PROPOSING.LEADER.RUN_END": 1794409291.4581661,
+          "PROPOSING.LEADER.RUN_START": 1794409284.6287842,
+          "PROPOSING.LEADER.EXEC_START": 1794409284.5993001,
+          "PROPOSING.VALIDATORS_SELECTED": 1794409284.5359645,
+          "COMMITTING.VALIDATORS_PREPARED": 1794409291.4946492,
+          "COMMITTING.VALIDATOR_0.RUN_END": 1794409299.3089309,
+          "COMMITTING.VALIDATOR_1.RUN_END": 1794409298.8110664,
+          "COMMITTING.VALIDATOR_2.RUN_END": 1794409306.386054,
+          "PROPOSING.TRANSACTION_EXECUTED": 1794409291.466906,
+          "COMMITTING.VALIDATOR_0.RUN_START": 1794409291.53059,
+          "COMMITTING.VALIDATOR_1.RUN_START": 1794409291.5587795,
+          "COMMITTING.VALIDATOR_2.RUN_START": 1794409291.5863657,
+          "COMMITTING.VALIDATOR_3.RUN_START": 1794409291.6119435,
+          "COMMITTING.VALIDATOR_4.RUN_START": 1794409291.6383965,
+          "PROPOSING.LEADER.DECODE_COMPLETE": 1794409284.6592379,
+          "PROPOSING.LEADER.RECEIPT_CREATED": 1794409291.4624135,
+          "COMMITTING.VALIDATOR_0.EXEC_START": 1794409291.5267127,
+          "COMMITTING.VALIDATOR_1.EXEC_START": 1794409291.5548809,
+          "COMMITTING.VALIDATOR_2.EXEC_START": 1794409291.5826917,
+          "COMMITTING.VALIDATOR_3.EXEC_START": 1794409291.6083453,
+          "COMMITTING.VALIDATOR_4.EXEC_START": 1794409291.6346982,
+          "COMMITTING.VALIDATORS_EXECUTION_END": 1794409306.4036033,
+          "PROPOSING.LEADER.EXECUTION_FINISHED": 1794409291.4520824,
+          "COMMITTING.VALIDATOR_0_END.attempt_0": 1794409299.3188462,
+          "COMMITTING.VALIDATOR_1_END.attempt_0": 1794409298.8207204,
+          "COMMITTING.VALIDATOR_2_END.attempt_0": 1794409306.3978193,
+          "COMMITTING.VALIDATORS_EXECUTION_START": 1794409291.4984298,
+          "COMMITTING.VALIDATION_RESULTS_GATHERED": 1794409306.4087818,
+          "COMMITTING.VALIDATOR_0.DECODE_COMPLETE": 1794409291.5361798,
+          "COMMITTING.VALIDATOR_0.RECEIPT_CREATED": 1794409299.3132634,
+          "COMMITTING.VALIDATOR_0_START.attempt_0": 1794409291.503112,
+          "COMMITTING.VALIDATOR_1.DECODE_COMPLETE": 1794409291.562735,
+          "COMMITTING.VALIDATOR_1.RECEIPT_CREATED": 1794409298.8155131,
+          "COMMITTING.VALIDATOR_1_START.attempt_0": 1794409291.5076785,
+          "COMMITTING.VALIDATOR_2.DECODE_COMPLETE": 1794409291.589965,
+          "COMMITTING.VALIDATOR_2.RECEIPT_CREATED": 1794409306.391535,
+          "COMMITTING.VALIDATOR_2_START.attempt_0": 1794409291.512153,
+          "COMMITTING.VALIDATOR_3.DECODE_COMPLETE": 1794409291.6156297,
+          "COMMITTING.VALIDATOR_3_START.attempt_0": 1794409291.5179238,
+          "COMMITTING.VALIDATOR_4.DECODE_COMPLETE": 1794409291.6421428,
+          "COMMITTING.VALIDATOR_4_START.attempt_0": 1794409291.5224812,
+          "PROPOSING.LEADER.GENVM_EXECUTION_START": 1794409284.7891333,
+          "PROPOSING.LEADER.SNAPSHOT_CREATION_END": 1794409284.7591362,
+          "PROPOSING.LEADER_NODE_CREATED.attempt_0": 1794409284.5704615,
+          "PROPOSING.LEADER.GENVM_PREPARATION_START": 1794409284.6888475,
+          "PROPOSING.LEADER.SNAPSHOT_CREATION_START": 1794409284.7291396,
+          "COMMITTING.VALIDATOR_0.EXECUTION_FINISHED": 1794409299.2997394,
+          "COMMITTING.VALIDATOR_1.EXECUTION_FINISHED": 1794409298.8055575,
+          "COMMITTING.VALIDATOR_2.EXECUTION_FINISHED": 1794409306.3793333,
+          "COMMITTING.VALIDATOR_0.GENVM_EXECUTION_START": 1794409291.550577,
+          "COMMITTING.VALIDATOR_0.SNAPSHOT_CREATION_END": 1794409291.5471702,
+          "COMMITTING.VALIDATOR_1.GENVM_EXECUTION_START": 1794409291.5783782,
+          "COMMITTING.VALIDATOR_1.SNAPSHOT_CREATION_END": 1794409291.5745213,
+          "COMMITTING.VALIDATOR_2.GENVM_EXECUTION_START": 1794409291.604339,
+          "COMMITTING.VALIDATOR_2.SNAPSHOT_CREATION_END": 1794409291.6008348,
+          "COMMITTING.VALIDATOR_3.GENVM_EXECUTION_START": 1794409291.6303573,
+          "COMMITTING.VALIDATOR_3.SNAPSHOT_CREATION_END": 1794409291.6267016,
+          "COMMITTING.VALIDATOR_4.GENVM_EXECUTION_START": 1794409291.657365,
+          "COMMITTING.VALIDATOR_4.SNAPSHOT_CREATION_END": 1794409291.6536741,
+          "COMMITTING.VALIDATOR_0.GENVM_PREPARATION_START": 1794409291.5398817,
+          "COMMITTING.VALIDATOR_0.SNAPSHOT_CREATION_START": 1794409291.5433798,
+          "COMMITTING.VALIDATOR_1.GENVM_PREPARATION_START": 1794409291.5666175,
+          "COMMITTING.VALIDATOR_1.SNAPSHOT_CREATION_START": 1794409291.5707314,
+          "COMMITTING.VALIDATOR_2.GENVM_PREPARATION_START": 1794409291.5936694,
+          "COMMITTING.VALIDATOR_2.SNAPSHOT_CREATION_START": 1794409291.597232,
+          "COMMITTING.VALIDATOR_3.GENVM_PREPARATION_START": 1794409291.6191924,
+          "COMMITTING.VALIDATOR_3.SNAPSHOT_CREATION_START": 1794409291.622952,
+          "COMMITTING.VALIDATOR_4.GENVM_PREPARATION_START": 1794409291.646016,
+          "COMMITTING.VALIDATOR_4.SNAPSHOT_CREATION_START": 1794409291.6497362
+        },
+        "leader_result": [
+          {
+            "mode": "leader",
+            "vote": null,
+            "result": "AAA=",
+            "calldata": "FgRhcmdzFbQBb3JnYW5pemF0aW9uLXNhbWUtbmFtZQkGbWV0aG9kdGFzc2Vzc19hdHRlbXB0",
+            "gas_used": 0,
+            "eq_outputs": {
+              "0": "AGYVYWRlcXVhdGVfd2l0bmVzc19zZXRzFT4TZmllbGRzOmp1cmlzZGljdGlvbg3EBDFiZGQ1MmU0YmI4NmFkOGZmMGVkYWViMWYwMmE2YjE2OGY4OWQyYzUwNWUzZDMzNDljZmZhODYxMjkwMGNjM2Q6MTI3OjE0NBJmaWVsZHM6b2ZmaWNpYWxfaWQNxAQxYmRkNTJlNGJiODZhZDhmZjBlZGFlYjFmMDJhNmIxNjhmODlkMmM1MDVlM2QzMzQ5Y2ZmYTg2MTI5MDBjYzNkOjEwMToxMjcbZmxhZ3M6Y29udHJvbGxpbmdfZXhjZXB0aW9uBRlmbGFnczppZGVudGlmaWVyX3JlaXNzdWVkBQ9mbGFnczpyZWN1cnJpbmcFEmZsYWdzOnJlbGF0ZWRfb25seQUVZmxhZ3M6c2NvcGVfYW1iaWd1b3VzBT4TZmllbGRzOmp1cmlzZGljdGlvbg3EBGE3ZGExNWJlNTM3MWQxM2Q3NmNlNTg5MDcyMDAxOTAzNzU1N2I5MTc2YzY0ZWRiNzQwZTAwZDU0NTI1ZjYyYTY6MTI3OjE0NBJmaWVsZHM6b2ZmaWNpYWxfaWQNxARhN2RhMTViZTUzNzFkMTNkNzZjZTU4OTA3MjAwMTkwMzc1NTdiOTE3NmM2NGVkYjc0MGUwMGQ1NDUyNWY2MmE2OjEwMToxMjcbZmxhZ3M6Y29udHJvbGxpbmdfZXhjZXB0aW9uBRlmbGFnczppZGVudGlmaWVyX3JlaXNzdWVkBQ9mbGFnczpyZWN1cnJpbmcFEmZsYWdzOnJlbGF0ZWRfb25seQUVZmxhZ3M6c2NvcGVfYW1iaWd1b3VzBQxhdmFpbGFiaWxpdHlMQVZBSUxBQkxFFGNvbnRyb2xsaW5nX3J1bGVfaWRzHVxSMV9DT01QTEVURYwBUjJfRElTQ1JJTUlOQVRPUlN8UjZfTk9fTkFNRV9PTkxZCGNvdmVyYWdlEBBkaWZmZXJlbnRfZmllbGRzDVxvZmZpY2lhbF9pZA5kaXNjcmltaW5hdG9ycxUWDGp1cmlzZGljdGlvbhRuZwtvZmZpY2lhbF9pZGRyZWdpc3RyeTo5OTEWDGp1cmlzZGljdGlvbhRuZwtvZmZpY2lhbF9pZGRyZWdpc3RyeTo5OTIGcmVhc29utAFESVNDUklNSU5BVE9SX0NPTkZMSUNUCHJlbGF0aW9uRERJU1RJTkNUBXNjb3BlZG9yZ2FuaXphdGlvbgtzY29wZV9mbGFncxUuFWNvbnRyb2xsaW5nX2V4Y2VwdGlvbggTaWRlbnRpZmllcl9yZWlzc3VlZAgJcmVjdXJyaW5nCAxyZWxhdGVkX29ubHkID3Njb3BlX2FtYmlndW91cwguFWNvbnRyb2xsaW5nX2V4Y2VwdGlvbggTaWRlbnRpZmllcl9yZWlzc3VlZAgJcmVjdXJyaW5nCAxyZWxhdGVkX29ubHkID3Njb3BlX2FtYmlndW91cwgKdW5yZXNvbHZlZAUJd2l0bmVzc2VzFT4TZmllbGRzOmp1cmlzZGljdGlvbsQEMWJkZDUyZTRiYjg2YWQ4ZmYwZWRhZWIxZjAyYTZiMTY4Zjg5ZDJjNTA1ZTNkMzM0OWNmZmE4NjEyOTAwY2MzZDoxMjc6MTQ0EmZpZWxkczpvZmZpY2lhbF9pZMQEMWJkZDUyZTRiYjg2YWQ4ZmYwZWRhZWIxZjAyYTZiMTY4Zjg5ZDJjNTA1ZTNkMzM0OWNmZmE4NjEyOTAwY2MzZDoxMDE6MTI3G2ZsYWdzOmNvbnRyb2xsaW5nX2V4Y2VwdGlvbgQZZmxhZ3M6aWRlbnRpZmllcl9yZWlzc3VlZAQPZmxhZ3M6cmVjdXJyaW5nBBJmbGFnczpyZWxhdGVkX29ubHkEFWZsYWdzOnNjb3BlX2FtYmlndW91cwQ+E2ZpZWxkczpqdXJpc2RpY3Rpb27EBGE3ZGExNWJlNTM3MWQxM2Q3NmNlNTg5MDcyMDAxOTAzNzU1N2I5MTc2YzY0ZWRiNzQwZTAwZDU0NTI1ZjYyYTY6MTI3OjE0NBJmaWVsZHM6b2ZmaWNpYWxfaWTEBGE3ZGExNWJlNTM3MWQxM2Q3NmNlNTg5MDcyMDAxOTAzNzU1N2I5MTc2YzY0ZWRiNzQwZTAwZDU0NTI1ZjYyYTY6MTAxOjEyNxtmbGFnczpjb250cm9sbGluZ19leGNlcHRpb24EGWZsYWdzOmlkZW50aWZpZXJfcmVpc3N1ZWQED2ZsYWdzOnJlY3VycmluZwQSZmxhZ3M6cmVsYXRlZF9vbmx5BBVmbGFnczpzY29wZV9hbWJpZ3VvdXME"
+            },
+            "node_config": {
+              "stake": 100,
+              "address": "0x722474B013fA39E5aA8785f927dCeB0e3F89815B",
+              "primary_model": {
+                "model": "anthropic/claude-sonnet-4.6",
+                "config": {
+                  "models": [
+                    "anthropic/claude-sonnet-4.6",
+                    "openai/gpt-5.4",
+                    "google/gemini-3-flash-preview"
+                  ]
+                },
+                "plugin": "openai-compatible",
+                "provider": "openrouter",
+                "plugin_config": {
+                  "api_url": "https://openrouter.ai/api",
+                  "api_key_env_var": "OPENROUTERAPIKEY"
+                },
+                "fallback_validator": "0xf1EAD5E5f876eae701eF1881b42861079cd9A287"
+              },
+              "secondary_model": {
+                "model": "policy:prd-kimi",
+                "config": {
+                  "policy_ir": [
+                    "policy",
+                    [
+                      "and",
+                      [
+                        "meets_req"
+                      ],
+                      [
+                        "not",
+                        [
+                          "is",
+                          "disabled"
+                        ]
+                      ],
+                      [
+                        "cmp",
+                        "success_rate",
+                        "ge",
+                        0.2
+                      ],
+                      [
+                        "or",
+                        [
+                          "family_eq",
+                          "kimi-k2.7-code"
+                        ],
+                        [
+                          "family_eq",
+                          "claude-sonnet-4-6"
+                        ],
+                        [
+                          "family_eq",
+                          "gpt-5.4"
+                        ]
+                      ]
+                    ],
+                    [
+                      "add",
+                      [
+                        "scale",
+                        100,
+                        [
+                          "gate",
+                          [
+                            "family_eq",
+                            "kimi-k2.7-code"
+                          ],
+                          [
+                            "lit",
+                            1
+                          ]
+                        ]
+                      ],
+                      [
+                        "scale",
+                        10,
+                        [
+                          "gate",
+                          [
+                            "family_eq",
+                            "claude-sonnet-4-6"
+                          ],
+                          [
+                            "lit",
+                            1
+                          ]
+                        ]
+                      ],
+                      [
+                        "scale",
+                        1,
+                        [
+                          "gate",
+                          [
+                            "family_eq",
+                            "gpt-5.4"
+                          ],
+                          [
+                            "lit",
+                            1
+                          ]
+                        ]
+                      ],
+                      [
+                        "scale",
+                        0.25,
+                        [
+                          "neg",
+                          [
+                            "normalize",
+                            [
+                              "field",
+                              "price_in"
+                            ]
+                          ]
+                        ]
+                      ],
+                      [
+                        "scale",
+                        0.45,
+                        [
+                          "neg",
+                          [
+                            "normalize",
+                            [
+                              "field",
+                              "price_out"
+                            ]
+                          ]
+                        ]
+                      ],
+                      [
+                        "scale",
+                        0.2,
+                        [
+                          "field",
+                          "success_rate"
+                        ]
+                      ],
+                      [
+                        "scale",
+                        0.1,
+                        [
+                          "neg",
+                          [
+                            "normalize",
+                            [
+                              "field",
+                              "latency_ms"
+                            ]
+                          ]
+                        ]
+                      ]
+                    ],
+                    [
+                      "argmax"
+                    ],
+                    [
+                      "id"
+                    ],
+                    [
+                      "always",
+                      {
+                        "action": "next_candidate"
+                      }
+                    ]
+                  ],
+                  "timeout_ms": 22000,
+                  "first_token_timeout_ms": 7000
+                },
+                "plugin": "openai-compatible",
+                "address": "0xf1EAD5E5f876eae701eF1881b42861079cd9A287",
+                "provider": "llm-router",
+                "plugin_config": {
+                  "api_url": "https://router.ygr.ai",
+                  "api_key_env_var": "LLM_ROUTER_API_KEY"
+                }
+              }
+            },
+            "genvm_result": {
+              "stderr": "/py/libs/genlayer/gl/_internal/storage.py:21: UserWarning: Detected pickling storage class. Reading storage in nondet mode is not supported\n  warnings.warn(\n",
+              "stdout": "",
+              "raw_error": null,
+              "error_code": null,
+              "error_description": null
+            },
+            "contract_state": {},
+            "execution_stats": {
+              "llm": {
+                "tokens": {
+                  "node-0x722474B013fA39E5aA8785f927dCeB0e3F89815B/anthropic/claude-sonnet-4.6": {
+                    "input": 1093,
+                    "total": 1605,
+                    "output": 512
+                  }
+                }
+              },
+              "call_counts": {
+                "CONSUME_FUEL": 1,
+                "STORAGE_READ": 285,
+                "NOTIFY_FINISHED": 1,
+                "REMAINING_FUEL_AS_GEN": 1
+              },
+              "host_first_method": "STORAGE_READ",
+              "delete_genvm_status": 200,
+              "host_loop_entered_s": 2043.827566425,
+              "host_loop_enter_wait_ms": 5,
+              "host_time_per_method_ms": {
+                "CONSUME_FUEL": 0,
+                "STORAGE_READ": 62,
+                "REMAINING_FUEL_AS_GEN": 0
+              },
+              "host_total_handling_time_ms": 62,
+              "manager_run_attempt_success": {
+                "attempt": 0,
+                "duration_ms": 3
+              },
+              "host_first_method_received_s": 2043.827694767,
+              "host_accept_to_first_method_ms": 0
+            },
+            "nondet_disagree": null,
+            "processing_time": 6621,
+            "execution_result": "SUCCESS",
+            "contract_state_hash": "ef71fe479ed8e930d5d6fe769f0ad9c0b8232081436d35525595c030d7c5fa88",
+            "pending_transactions": [
+              {
+                "on": "finalized",
+                "value": 0,
+                "address": "0x5391D96ddEc55ce5F37E4fA7c6c7abC60b76a636",
+                "calldata": "FgRhcmdzDbQBb3JnYW5pemF0aW9uLXNhbWUtbmFtZQZtZXRob2SEAWNvbmZpcm1fcmVsYXRpb24="
+              }
+            ]
+          },
+          {
+            "mode": "validator",
+            "vote": "agree",
+            "result": "AAA=",
+            "calldata": "FgRhcmdzFbQBb3JnYW5pemF0aW9uLXNhbWUtbmFtZQkGbWV0aG9kdGFzc2Vzc19hdHRlbXB0",
+            "gas_used": 0,
+            "node_config": {
+              "stake": 100,
+              "address": "0x722474B013fA39E5aA8785f927dCeB0e3F89815B",
+              "primary_model": {
+                "model": "anthropic/claude-sonnet-4.6",
+                "config": {
+                  "models": [
+                    "anthropic/claude-sonnet-4.6",
+                    "openai/gpt-5.4",
+                    "google/gemini-3-flash-preview"
+                  ]
+                },
+                "plugin": "openai-compatible",
+                "provider": "openrouter",
+                "plugin_config": {
+                  "api_url": "https://openrouter.ai/api",
+                  "api_key_env_var": "OPENROUTERAPIKEY"
+                },
+                "fallback_validator": "0xf1EAD5E5f876eae701eF1881b42861079cd9A287"
+              },
+              "secondary_model": {
+                "model": "policy:prd-kimi",
+                "config": {
+                  "policy_ir": [
+                    "policy",
+                    [
+                      "and",
+                      [
+                        "meets_req"
+                      ],
+                      [
+                        "not",
+                        [
+                          "is",
+                          "disabled"
+                        ]
+                      ],
+                      [
+                        "cmp",
+                        "success_rate",
+                        "ge",
+                        0.2
+                      ],
+                      [
+                        "or",
+                        [
+                          "family_eq",
+                          "kimi-k2.7-code"
+                        ],
+                        [
+                          "family_eq",
+                          "claude-sonnet-4-6"
+                        ],
+                        [
+                          "family_eq",
+                          "gpt-5.4"
+                        ]
+                      ]
+                    ],
+                    [
+                      "add",
+                      [
+                        "scale",
+                        100,
+                        [
+                          "gate",
+                          [
+                            "family_eq",
+                            "kimi-k2.7-code"
+                          ],
+                          [
+                            "lit",
+                            1
+                          ]
+                        ]
+                      ],
+                      [
+                        "scale",
+                        10,
+                        [
+                          "gate",
+                          [
+                            "family_eq",
+                            "claude-sonnet-4-6"
+                          ],
+                          [
+                            "lit",
+                            1
+                          ]
+                        ]
+                      ],
+                      [
+                        "scale",
+                        1,
+                        [
+                          "gate",
+                          [
+                            "family_eq",
+                            "gpt-5.4"
+                          ],
+                          [
+                            "lit",
+                            1
+                          ]
+                        ]
+                      ],
+                      [
+                        "scale",
+                        0.25,
+                        [
+                          "neg",
+                          [
+                            "normalize",
+                            [
+                              "field",
+                              "price_in"
+                            ]
+                          ]
+                        ]
+                      ],
+                      [
+                        "scale",
+                        0.45,
+                        [
+                          "neg",
+                          [
+                            "normalize",
+                            [
+                              "field",
+                              "price_out"
+                            ]
+                          ]
+                        ]
+                      ],
+                      [
+                        "scale",
+                        0.2,
+                        [
+                          "field",
+                          "success_rate"
+                        ]
+                      ],
+                      [
+                        "scale",
+                        0.1,
+                        [
+                          "neg",
+                          [
+                            "normalize",
+                            [
+                              "field",
+                              "latency_ms"
+                            ]
+                          ]
+                        ]
+                      ]
+                    ],
+                    [
+                      "argmax"
+                    ],
+                    [
+                      "id"
+                    ],
+                    [
+                      "always",
+                      {
+                        "action": "next_candidate"
+                      }
+                    ]
+                  ],
+                  "timeout_ms": 22000,
+                  "first_token_timeout_ms": 7000
+                },
+                "plugin": "openai-compatible",
+                "address": "0xf1EAD5E5f876eae701eF1881b42861079cd9A287",
+                "provider": "llm-router",
+                "plugin_config": {
+                  "api_url": "https://router.ygr.ai",
+                  "api_key_env_var": "LLM_ROUTER_API_KEY"
+                }
+              }
+            },
+            "genvm_result": {
+              "stderr": "/py/libs/genlayer/gl/_internal/storage.py:21: UserWarning: Detected pickling storage class. Reading storage in nondet mode is not supported\n  warnings.warn(\n",
+              "stdout": "",
+              "raw_error": null,
+              "error_code": null,
+              "error_description": null
+            },
+            "contract_state": {},
+            "execution_stats": {
+              "llm": {
+                "tokens": {
+                  "node-0x722474B013fA39E5aA8785f927dCeB0e3F89815B/anthropic/claude-sonnet-4.6": {
+                    "input": 1093,
+                    "total": 1605,
+                    "output": 512
+                  }
+                }
+              },
+              "call_counts": {
+                "CONSUME_FUEL": 1,
+                "STORAGE_READ": 285,
+                "NOTIFY_FINISHED": 1,
+                "REMAINING_FUEL_AS_GEN": 1
+              },
+              "host_first_method": "STORAGE_READ",
+              "delete_genvm_status": 200,
+              "host_loop_entered_s": 2050.663172751,
+              "host_loop_enter_wait_ms": 9,
+              "host_time_per_method_ms": {
+                "CONSUME_FUEL": 0,
+                "STORAGE_READ": 150,
+                "REMAINING_FUEL_AS_GEN": 0
+              },
+              "host_total_handling_time_ms": 150,
+              "manager_run_attempt_success": {
+                "attempt": 0,
+                "duration_ms": 6
+              },
+              "host_first_method_received_s": 2050.663331413,
+              "host_accept_to_first_method_ms": 0
+            },
+            "nondet_disagree": null,
+            "processing_time": 7744,
+            "execution_result": "SUCCESS",
+            "contract_state_hash": "ef71fe479ed8e930d5d6fe769f0ad9c0b8232081436d35525595c030d7c5fa88",
+            "pending_transactions": [
+              {
+                "on": "finalized",
+                "value": 0,
+                "address": "0x5391D96ddEc55ce5F37E4fA7c6c7abC60b76a636",
+                "calldata": "FgRhcmdzDbQBb3JnYW5pemF0aW9uLXNhbWUtbmFtZQZtZXRob2SEAWNvbmZpcm1fcmVsYXRpb24="
+              }
+            ]
+          }
+        ],
+        "status_changes": [
+          "PENDING",
+          "PROPOSING",
+          "COMMITTING",
+          "REVEALING",
+          "ACCEPTED"
+        ],
+        "consensus_round": "Accepted",
+        "validator_results": [
+          {
+            "mode": "validator",
+            "vote": "agree",
+            "result": "AAA=",
+            "calldata": "FgRhcmdzFbQBb3JnYW5pemF0aW9uLXNhbWUtbmFtZQkGbWV0aG9kdGFzc2Vzc19hdHRlbXB0",
+            "gas_used": 0,
+            "node_config": {
+              "stake": 100,
+              "address": "0xC65Ec56a1141866951B34D846be8EF433764A48B",
+              "primary_model": {
+                "model": "openai/gpt-5.4",
+                "config": {
+                  "models": [
+                    "openai/gpt-5.4",
+                    "anthropic/claude-sonnet-4.6",
+                    "google/gemini-3-flash-preview"
+                  ]
+                },
+                "plugin": "openai-compatible",
+                "provider": "openrouter",
+                "plugin_config": {
+                  "api_url": "https://openrouter.ai/api",
+                  "api_key_env_var": "OPENROUTERAPIKEY"
+                },
+                "fallback_validator": "0x2bB088e4E6Fd1faBBd23d93F38D01f28a954A49c"
+              },
+              "secondary_model": {
+                "model": "policy:prd-gpt-oss",
+                "config": {
+                  "policy_ir": [
+                    "policy",
+                    [
+                      "and",
+                      [
+                        "meets_req"
+                      ],
+                      [
+                        "not",
+                        [
+                          "is",
+                          "disabled"
+                        ]
+                      ],
+                      [
+                        "cmp",
+                        "success_rate",
+                        "ge",
+                        0.2
+                      ],
+                      [
+                        "or",
+                        [
+                          "family_eq",
+                          "gpt-oss-120b"
+                        ],
+                        [
+                          "family_eq",
+                          "deepseek-v3.2"
+                        ],
+                        [
+                          "family_eq",
+                          "gpt-5.4"
+                        ]
+                      ]
+                    ],
+                    [
+                      "add",
+                      [
+                        "scale",
+                        100,
+                        [
+                          "gate",
+                          [
+                            "family_eq",
+                            "gpt-oss-120b"
+                          ],
+                          [
+                            "lit",
+                            1
+                          ]
+                        ]
+                      ],
+                      [
+                        "scale",
+                        10,
+                        [
+                          "gate",
+                          [
+                            "family_eq",
+                            "deepseek-v3.2"
+                          ],
+                          [
+                            "lit",
+                            1
+                          ]
+                        ]
+                      ],
+                      [
+                        "scale",
+                        1,
+                        [
+                          "gate",
+                          [
+                            "family_eq",
+                            "gpt-5.4"
+                          ],
+                          [
+                            "lit",
+                            1
+                          ]
+                        ]
+                      ],
+                      [
+                        "scale",
+                        0.25,
+                        [
+                          "neg",
+                          [
+                            "normalize",
+                            [
+                              "field",
+                              "price_in"
+                            ]
+                          ]
+                        ]
+                      ],
+                      [
+                        "scale",
+                        0.45,
+                        [
+                          "neg",
+                          [
+                            "normalize",
+                            [
+                              "field",
+                              "price_out"
+                            ]
+                          ]
+                        ]
+                      ],
+                      [
+                        "scale",
+                        0.2,
+                        [
+                          "field",
+                          "success_rate"
+                        ]
+                      ],
+                      [
+                        "scale",
+                        0.1,
+                        [
+                          "neg",
+                          [
+                            "normalize",
+                            [
+                              "field",
+                              "latency_ms"
+                            ]
+                          ]
+                        ]
+                      ]
+                    ],
+                    [
+                      "argmax"
+                    ],
+                    [
+                      "id"
+                    ],
+                    [
+                      "always",
+                      {
+                        "action": "next_candidate"
+                      }
+                    ]
+                  ],
+                  "timeout_ms": 22000,
+                  "first_token_timeout_ms": 7000
+                },
+                "plugin": "openai-compatible",
+                "address": "0x2bB088e4E6Fd1faBBd23d93F38D01f28a954A49c",
+                "provider": "llm-router",
+                "plugin_config": {
+                  "api_url": "https://router.ygr.ai",
+                  "api_key_env_var": "LLM_ROUTER_API_KEY"
+                }
+              }
+            },
+            "genvm_result": {
+              "stderr": "/py/libs/genlayer/gl/_internal/storage.py:21: UserWarning: Detected pickling storage class. Reading storage in nondet mode is not supported\n  warnings.warn(\n",
+              "stdout": "",
+              "raw_error": null,
+              "error_code": null,
+              "error_description": null
+            },
+            "contract_state": {},
+            "execution_stats": {
+              "llm": {
+                "tokens": {
+                  "node-0xC65Ec56a1141866951B34D846be8EF433764A48B/openai/gpt-5.4": {
+                    "input": 970,
+                    "total": 1337,
+                    "output": 367
+                  }
+                }
+              },
+              "call_counts": {
+                "CONSUME_FUEL": 1,
+                "STORAGE_READ": 285,
+                "NOTIFY_FINISHED": 1,
+                "REMAINING_FUEL_AS_GEN": 1
+              },
+              "host_first_method": "STORAGE_READ",
+              "delete_genvm_status": 200,
+              "host_loop_entered_s": 2050.664683645,
+              "host_loop_enter_wait_ms": 9,
+              "host_time_per_method_ms": {
+                "CONSUME_FUEL": 0,
+                "STORAGE_READ": 147,
+                "REMAINING_FUEL_AS_GEN": 0
+              },
+              "host_total_handling_time_ms": 147,
+              "manager_run_attempt_success": {
+                "attempt": 0,
+                "duration_ms": 6
+              },
+              "host_first_method_received_s": 2050.665434826,
+              "host_accept_to_first_method_ms": 1
+            },
+            "nondet_disagree": null,
+            "processing_time": 7222,
+            "execution_result": "SUCCESS",
+            "contract_state_hash": "ef71fe479ed8e930d5d6fe769f0ad9c0b8232081436d35525595c030d7c5fa88",
+            "pending_transactions": [
+              {
+                "on": "finalized",
+                "value": 0,
+                "address": "0x5391D96ddEc55ce5F37E4fA7c6c7abC60b76a636",
+                "calldata": "FgRhcmdzDbQBb3JnYW5pemF0aW9uLXNhbWUtbmFtZQZtZXRob2SEAWNvbmZpcm1fcmVsYXRpb24="
+              }
+            ]
+          },
+          {
+            "mode": "validator",
+            "vote": "agree",
+            "result": "AAA=",
+            "calldata": "FgRhcmdzFbQBb3JnYW5pemF0aW9uLXNhbWUtbmFtZQkGbWV0aG9kdGFzc2Vzc19hdHRlbXB0",
+            "gas_used": 0,
+            "node_config": {
+              "stake": 100,
+              "address": "0x37CD8552B86b2B662eCfb69C4A1253dBE41EB4C1",
+              "primary_model": {
+                "model": "policy:prd-gpt-5-4",
+                "config": {
+                  "policy_ir": [
+                    "policy",
+                    [
+                      "and",
+                      [
+                        "meets_req"
+                      ],
+                      [
+                        "not",
+                        [
+                          "is",
+                          "disabled"
+                        ]
+                      ],
+                      [
+                        "cmp",
+                        "success_rate",
+                        "ge",
+                        0.2
+                      ],
+                      [
+                        "or",
+                        [
+                          "family_eq",
+                          "gpt-5.4"
+                        ],
+                        [
+                          "family_eq",
+                          "gemini-3-flash-preview"
+                        ],
+                        [
+                          "family_eq",
+                          "gpt-oss-120b"
+                        ]
+                      ]
+                    ],
+                    [
+                      "add",
+                      [
+                        "scale",
+                        100,
+                        [
+                          "gate",
+                          [
+                            "family_eq",
+                            "gpt-5.4"
+                          ],
+                          [
+                            "lit",
+                            1
+                          ]
+                        ]
+                      ],
+                      [
+                        "scale",
+                        10,
+                        [
+                          "gate",
+                          [
+                            "family_eq",
+                            "gemini-3-flash-preview"
+                          ],
+                          [
+                            "lit",
+                            1
+                          ]
+                        ]
+                      ],
+                      [
+                        "scale",
+                        1,
+                        [
+                          "gate",
+                          [
+                            "family_eq",
+                            "gpt-oss-120b"
+                          ],
+                          [
+                            "lit",
+                            1
+                          ]
+                        ]
+                      ],
+                      [
+                        "scale",
+                        0.25,
+                        [
+                          "neg",
+                          [
+                            "normalize",
+                            [
+                              "field",
+                              "price_in"
+                            ]
+                          ]
+                        ]
+                      ],
+                      [
+                        "scale",
+                        0.45,
+                        [
+                          "neg",
+                          [
+                            "normalize",
+                            [
+                              "field",
+                              "price_out"
+                            ]
+                          ]
+                        ]
+                      ],
+                      [
+                        "scale",
+                        0.2,
+                        [
+                          "field",
+                          "success_rate"
+                        ]
+                      ],
+                      [
+                        "scale",
+                        0.1,
+                        [
+                          "neg",
+                          [
+                            "normalize",
+                            [
+                              "field",
+                              "latency_ms"
+                            ]
+                          ]
+                        ]
+                      ]
+                    ],
+                    [
+                      "argmax"
+                    ],
+                    [
+                      "id"
+                    ],
+                    [
+                      "always",
+                      {
+                        "action": "next_candidate"
+                      }
+                    ]
+                  ],
+                  "timeout_ms": 22000,
+                  "first_token_timeout_ms": 7000
+                },
+                "plugin": "openai-compatible",
+                "provider": "llm-router",
+                "plugin_config": {
+                  "api_url": "https://router.ygr.ai",
+                  "api_key_env_var": "LLM_ROUTER_API_KEY"
+                },
+                "fallback_validator": "0x0cf3809a31B0c7E0742d126451aDE1977e3748D2"
+              },
+              "secondary_model": {
+                "model": "google/gemini-3-flash-preview",
+                "config": {
+                  "models": [
+                    "google/gemini-3-flash-preview",
+                    "openai/gpt-5.4",
+                    "anthropic/claude-sonnet-4.6"
+                  ]
+                },
+                "plugin": "openai-compatible",
+                "address": "0x0cf3809a31B0c7E0742d126451aDE1977e3748D2",
+                "provider": "openrouter",
+                "plugin_config": {
+                  "api_url": "https://openrouter.ai/api",
+                  "api_key_env_var": "OPENROUTERAPIKEY"
+                }
+              }
+            },
+            "genvm_result": {
+              "stderr": "/py/libs/genlayer/gl/_internal/storage.py:21: UserWarning: Detected pickling storage class. Reading storage in nondet mode is not supported\n  warnings.warn(\n",
+              "stdout": "",
+              "raw_error": null,
+              "error_code": null,
+              "error_description": null
+            },
+            "contract_state": {},
+            "execution_stats": {
+              "llm": {
+                "tokens": {
+                  "node-0x37CD8552B86b2B662eCfb69C4A1253dBE41EB4C1/policy:prd-gpt-5-4": {
+                    "input": 970,
+                    "total": 1337,
+                    "output": 367
+                  }
+                }
+              },
+              "call_counts": {
+                "CONSUME_FUEL": 1,
+                "STORAGE_READ": 285,
+                "NOTIFY_FINISHED": 1,
+                "REMAINING_FUEL_AS_GEN": 1
+              },
+              "host_first_method": "STORAGE_READ",
+              "delete_genvm_status": 200,
+              "host_loop_entered_s": 2058.315858465,
+              "host_loop_enter_wait_ms": 7660,
+              "host_time_per_method_ms": {
+                "CONSUME_FUEL": 0,
+                "STORAGE_READ": 70,
+                "REMAINING_FUEL_AS_GEN": 0
+              },
+              "host_total_handling_time_ms": 70,
+              "manager_run_attempt_success": {
+                "attempt": 0,
+                "duration_ms": 7656
+              },
+              "host_first_method_received_s": 2058.31617194,
+              "host_accept_to_first_method_ms": 0
+            },
+            "nondet_disagree": null,
+            "processing_time": 14770,
+            "execution_result": "SUCCESS",
+            "contract_state_hash": "ef71fe479ed8e930d5d6fe769f0ad9c0b8232081436d35525595c030d7c5fa88",
+            "pending_transactions": [
+              {
+                "on": "finalized",
+                "value": 0,
+                "address": "0x5391D96ddEc55ce5F37E4fA7c6c7abC60b76a636",
+                "calldata": "FgRhcmdzDbQBb3JnYW5pemF0aW9uLXNhbWUtbmFtZQZtZXRob2SEAWNvbmZpcm1fcmVsYXRpb24="
+              }
+            ]
+          },
+          {
+            "mode": "validator",
+            "vote": "idle",
+            "result": "AmlkbGU=",
+            "calldata": "",
+            "gas_used": 0,
+            "node_config": {
+              "id": 5801,
+              "model": "policy:prd-glm",
+              "stake": 100,
+              "config": {
+                "policy_ir": [
+                  "policy",
+                  [
+                    "and",
+                    [
+                      "meets_req"
+                    ],
+                    [
+                      "not",
+                      [
+                        "is",
+                        "disabled"
+                      ]
+                    ],
+                    [
+                      "cmp",
+                      "success_rate",
+                      "ge",
+                      0.2
+                    ],
+                    [
+                      "or",
+                      [
+                        "family_eq",
+                        "glm-5.1"
+                      ],
+                      [
+                        "family_eq",
+                        "gpt-oss-120b"
+                      ],
+                      [
+                        "family_eq",
+                        "gpt-5.4"
+                      ]
+                    ]
+                  ],
+                  [
+                    "add",
+                    [
+                      "scale",
+                      100,
+                      [
+                        "gate",
+                        [
+                          "family_eq",
+                          "glm-5.1"
+                        ],
+                        [
+                          "lit",
+                          1
+                        ]
+                      ]
+                    ],
+                    [
+                      "scale",
+                      10,
+                      [
+                        "gate",
+                        [
+                          "family_eq",
+                          "gpt-oss-120b"
+                        ],
+                        [
+                          "lit",
+                          1
+                        ]
+                      ]
+                    ],
+                    [
+                      "scale",
+                      1,
+                      [
+                        "gate",
+                        [
+                          "family_eq",
+                          "gpt-5.4"
+                        ],
+                        [
+                          "lit",
+                          1
+                        ]
+                      ]
+                    ],
+                    [
+                      "scale",
+                      0.25,
+                      [
+                        "neg",
+                        [
+                          "normalize",
+                          [
+                            "field",
+                            "price_in"
+                          ]
+                        ]
+                      ]
+                    ],
+                    [
+                      "scale",
+                      0.45,
+                      [
+                        "neg",
+                        [
+                          "normalize",
+                          [
+                            "field",
+                            "price_out"
+                          ]
+                        ]
+                      ]
+                    ],
+                    [
+                      "scale",
+                      0.2,
+                      [
+                        "field",
+                        "success_rate"
+                      ]
+                    ],
+                    [
+                      "scale",
+                      0.1,
+                      [
+                        "neg",
+                        [
+                          "normalize",
+                          [
+                            "field",
+                            "latency_ms"
+                          ]
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "argmax"
+                  ],
+                  [
+                    "id"
+                  ],
+                  [
+                    "always",
+                    {
+                      "action": "next_candidate"
+                    }
+                  ]
+                ],
+                "timeout_ms": 22000,
+                "first_token_timeout_ms": 7000
+              },
+              "plugin": "openai-compatible",
+              "address": "0x8644a8D2D08903cAFA1F0fb28E34E0ecA727e9ED",
+              "provider": "llm-router",
+              "plugin_config": {
+                "api_url": "https://router.ygr.ai",
+                "api_key_env_var": "LLM_ROUTER_API_KEY"
+              },
+              "fallback_validator": "0x0cf3809a31B0c7E0742d126451aDE1977e3748D2"
+            },
+            "genvm_result": {
+              "stderr": "Validator execution cancelled after quorum",
+              "stdout": "",
+              "raw_error": {
+                "fatal": false,
+                "causes": [
+                  "VALIDATOR_QUORUM_REACHED"
+                ]
+              },
+              "error_code": "CONSENSUS_VALIDATOR_QUORUM_REACHED"
+            },
+            "contract_state": {},
+            "execution_stats": null,
+            "nondet_disagree": null,
+            "processing_time": 0,
+            "execution_result": "ERROR",
+            "contract_state_hash": null,
+            "pending_transactions": []
+          },
+          {
+            "mode": "validator",
+            "vote": "idle",
+            "result": "AmlkbGU=",
+            "calldata": "",
+            "gas_used": 0,
+            "node_config": {
+              "id": 5796,
+              "model": "policy:prd-gpt-oss",
+              "stake": 100,
+              "config": {
+                "policy_ir": [
+                  "policy",
+                  [
+                    "and",
+                    [
+                      "meets_req"
+                    ],
+                    [
+                      "not",
+                      [
+                        "is",
+                        "disabled"
+                      ]
+                    ],
+                    [
+                      "cmp",
+                      "success_rate",
+                      "ge",
+                      0.2
+                    ],
+                    [
+                      "or",
+                      [
+                        "family_eq",
+                        "gpt-oss-120b"
+                      ],
+                      [
+                        "family_eq",
+                        "deepseek-v3.2"
+                      ],
+                      [
+                        "family_eq",
+                        "gpt-5.4"
+                      ]
+                    ]
+                  ],
+                  [
+                    "add",
+                    [
+                      "scale",
+                      100,
+                      [
+                        "gate",
+                        [
+                          "family_eq",
+                          "gpt-oss-120b"
+                        ],
+                        [
+                          "lit",
+                          1
+                        ]
+                      ]
+                    ],
+                    [
+                      "scale",
+                      10,
+                      [
+                        "gate",
+                        [
+                          "family_eq",
+                          "deepseek-v3.2"
+                        ],
+                        [
+                          "lit",
+                          1
+                        ]
+                      ]
+                    ],
+                    [
+                      "scale",
+                      1,
+                      [
+                        "gate",
+                        [
+                          "family_eq",
+                          "gpt-5.4"
+                        ],
+                        [
+                          "lit",
+                          1
+                        ]
+                      ]
+                    ],
+                    [
+                      "scale",
+                      0.25,
+                      [
+                        "neg",
+                        [
+                          "normalize",
+                          [
+                            "field",
+                            "price_in"
+                          ]
+                        ]
+                      ]
+                    ],
+                    [
+                      "scale",
+                      0.45,
+                      [
+                        "neg",
+                        [
+                          "normalize",
+                          [
+                            "field",
+                            "price_out"
+                          ]
+                        ]
+                      ]
+                    ],
+                    [
+                      "scale",
+                      0.2,
+                      [
+                        "field",
+                        "success_rate"
+                      ]
+                    ],
+                    [
+                      "scale",
+                      0.1,
+                      [
+                        "neg",
+                        [
+                          "normalize",
+                          [
+                            "field",
+                            "latency_ms"
+                          ]
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    "argmax"
+                  ],
+                  [
+                    "id"
+                  ],
+                  [
+                    "always",
+                    {
+                      "action": "next_candidate"
+                    }
+                  ]
+                ],
+                "timeout_ms": 22000,
+                "first_token_timeout_ms": 7000
+              },
+              "plugin": "openai-compatible",
+              "address": "0x2bB088e4E6Fd1faBBd23d93F38D01f28a954A49c",
+              "provider": "llm-router",
+              "plugin_config": {
+                "api_url": "https://router.ygr.ai",
+                "api_key_env_var": "LLM_ROUTER_API_KEY"
+              },
+              "fallback_validator": "0x722474B013fA39E5aA8785f927dCeB0e3F89815B"
+            },
+            "genvm_result": {
+              "stderr": "Validator execution cancelled after quorum",
+              "stdout": "",
+              "raw_error": {
+                "fatal": false,
+                "causes": [
+                  "VALIDATOR_QUORUM_REACHED"
+                ]
+              },
+              "error_code": "CONSENSUS_VALIDATOR_QUORUM_REACHED"
+            },
+            "contract_state": {},
+            "execution_stats": null,
+            "nondet_disagree": null,
+            "processing_time": 0,
+            "execution_result": "ERROR",
+            "contract_state_hash": null,
+            "pending_transactions": []
+          }
+        ]
+      }
+    ],
+    "current_monitoring": {
+      "FINALIZED": 1794409344.4645925,
+      "COMMITTING.VALIDATOR_3.RUN_END": 1794409311.1163645,
+      "COMMITTING.VALIDATOR_4.RUN_END": 1794409308.5511413,
+      "COMMITTING.VALIDATOR_3.RECEIPT_CREATED": 1794409311.1229312,
+      "COMMITTING.VALIDATOR_4.RECEIPT_CREATED": 1794409308.579489,
+      "COMMITTING.VALIDATOR_3.EXECUTION_FINISHED": 1794409311.107179,
+      "COMMITTING.VALIDATOR_4.EXECUTION_FINISHED": 1794409308.5206711
+    },
+    "current_status_changes": [
+      "FINALIZED"
+    ]
+  },
+  "timestamp_appeal": null,
+  "appeal_processing_time": 0,
+  "config_rotation_rounds": null,
+  "num_of_initial_validators": null,
+  "last_vote_timestamp": "1794409306",
+  "rotation_count": 0,
+  "appeal_leader_timeout": false,
+  "leader_timeout_validators": [],
+  "appeal_validators_timeout": false,
+  "sim_config": {
+    "validators": [],
+    "genvm_datetime": null
+  },
+  "value_credited": false,
+  "current_timestamp": "1794410398",
+  "sender": "0x5391D96ddEc55ce5F37E4fA7c6c7abC60b76a636",
+  "recipient": "0x5391D96ddEc55ce5F37E4fA7c6c7abC60b76a636",
+  "tx_slot": "0",
+  "created_timestamp": "1794409172",
+  "random_seed": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "tx_id": "0xde5788077577a24d98d57d2c7332a233a3598281acc057c6e1aab2abc15e9c45",
+  "read_state_block_range": {
+    "activation_block": "0",
+    "processing_block": "0",
+    "proposal_block": "0"
+  },
+  "activator": "0x722474B013fA39E5aA8785f927dCeB0e3F89815B",
+  "last_leader": "0x722474B013fA39E5aA8785f927dCeB0e3F89815B",
+  "result_name": "MAJORITY_AGREE",
+  "tx_data": "f838b616046172677315b4016f7267616e697a6174696f6e2d73616d652d6e616d6509066d6574686f64746173736573735f617474656d707400",
+  "tx_execution_hash": "0x316a2845993fefb3078dfe38e9e7b92539ab5f441c57243be826a9c4abb2704b",
+  "eq_blocks_outputs": "0xf897f88fc28000f888f886aa307835333931443936646445633535636535463337453466413763366337616243363062373661363336b84c46675268636d647a4462514262334a6e59573570656d4630615739754c584e6862575574626d46745a515a745a58526f6232534541574e76626d5a70636d3166636d5673595852706232343d808966696e616c697a65648080c080c5c480c28000",
+  "messages": [
+    {
+      "messageType": "0",
+      "recipient": "0x5391D96ddEc55ce5F37E4fA7c6c7abC60b76a636",
+      "value": 0,
+      "data": "FgRhcmdzDbQBb3JnYW5pemF0aW9uLXNhbWUtbmFtZQZtZXRob2SEAWNvbmZpcm1fcmVsYXRpb24=",
+      "onAcceptance": false
+    }
+  ],
+  "queue_type": "0",
+  "queue_position": "0",
+  "num_of_rounds": "1",
+  "last_round": {
+    "round": "0",
+    "leader_index": "0",
+    "votes_committed": "5",
+    "votes_revealed": "5",
+    "appeal_bond": "0",
+    "rotations_left": "0",
+    "result": 6,
+    "round_validators": [
+      "0x722474B013fA39E5aA8785f927dCeB0e3F89815B",
+      "0xC65Ec56a1141866951B34D846be8EF433764A48B",
+      "0x37CD8552B86b2B662eCfb69C4A1253dBE41EB4C1",
+      "0x8644a8D2D08903cAFA1F0fb28E34E0ecA727e9ED",
+      "0x2bB088e4E6Fd1faBBd23d93F38D01f28a954A49c"
+    ],
+    "validator_votes_hash": [
+      "0x0528bcf780f88012d4e741e1d82ecbf276d7a9dd5d4298e5513abbaf41e899a5",
+      "0x5bfc656517f8476eefe01999bf0c76f82b77fd4400ddfdd3449414b31b13058a",
+      "0x48218d4507823fc80d4bc1f04f2c6cc96f097f4da59404e0df66768d658fd955",
+      "0x623e691fcf8ccaba725f6865cac244c4a53be3f23f8b64fedbb03045707bdc3c",
+      "0x2fde830aca3d36452af1167576d6a70f53f89d39cfb07d19f3322969858d0b1c"
+    ],
+    "validator_votes": [
+      1,
+      1,
+      1,
+      5,
+      5
+    ],
+    "validator_votes_name": [
+      "AGREE",
+      "AGREE",
+      "AGREE",
+      "IDLE",
+      "IDLE"
+    ]
+  },
+  "status_name": "FINALIZED"
+}

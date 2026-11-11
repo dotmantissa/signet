@@ -16,9 +16,20 @@ Two standalone consumer contracts enforce different consequences. `ReceivableCon
 | [scripts/envelopes.py](scripts/envelopes.py) | Canonical request and source-manifest builders |
 | [scripts/signet_cli.py](scripts/signet_cli.py) | Signed operations, views and journaled receipt recovery |
 | [tests/direct](tests/direct) | Deterministic state tests and explicit validator rejection probes |
-| [tests/integration](tests/integration) | Real Studio consensus and delivery verification |
+| [tests/integration](tests/integration) | Pinned Studio runtime compatibility probe |
+| [scripts/run_batch.py](scripts/run_batch.py), [scripts/verify_studio.py](scripts/verify_studio.py) | Real Studio consensus, delivery, source and recovery verification |
 
 Every contract is independently deployable as a single Python file. The pinned runner is `py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6`. The runtime probe in [evidence](evidence) verifies the baseline on Studio chain 61999, including finalized messages, storage records and transaction time.
+
+## Studio deployment
+
+| Contract | Address on Studio chain 61999 |
+| --- | --- |
+| Signet | `0x5391D96ddEc55ce5F37E4fA7c6c7abC60b76a636` |
+| Receivable consumer | `0x29Ec2CBF430c67D208f7B7a8BBc77fDd0F56035e` |
+| Incident consumer | `0x459963185d5526941574aCF60bd9DeE9077f30fC` |
+
+The [verification record](docs/verification.md) links the real multi-validator assessments, authenticated callbacks, acknowledgements and exact deployed-source comparisons. The public source corpus contains disclosed synthetic facts. A fourth deployment is an obligation consumer bound to an organization policy for a negative schema-compatibility probe; it quarantines organization certificates.
 
 ## Installation
 

@@ -107,7 +107,6 @@ class Studio:
                     print(label, 'FINALIZED SUCCESS', flush=True)
                 else:
                     next_pending.append((label,tx))
-                time.sleep(1)
             pending=next_pending
             if pending: time.sleep(15)
         if pending: raise TimeoutError('Journaled pending operations: '+str(pending))

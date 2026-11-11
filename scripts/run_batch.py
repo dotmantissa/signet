@@ -92,7 +92,7 @@ def run():
     for name,(case,principal,receiver,bundle) in bundles.items():
         delivery=owner.wait_delivery(resolver,receiver,name)
         operation=principal.read(receiver,'get_operation',[name])
-        expected='PERMITTED' if case['expected']=='SAME' else 'REFUSED_UNRESOLVED' if case['expected']=='UNKNOWN' else 'REFUSED_DISTINCT'
+        expected='QUARANTINED' if case['kind']=='ORGANIZATION' else 'PERMITTED' if case['expected']=='SAME' else 'REFUSED_UNRESOLVED' if case['expected']=='UNKNOWN' else 'REFUSED_DISTINCT'
         assert operation['effective_status']==expected, name+' consumer status '+operation['effective_status']
         atomic_json(Path(ROOT)/(name+'.consumer.json'),operation)
         if case['kind']=='INCIDENT':
@@ -108,7 +108,7 @@ def run():
             alias=owner.read(resolver,'get_alias',[bundle['envelope']['subject_id']])
             assert alias['active'] and alias['cluster_id']
             atomic_json(Path(ROOT)/(name+'.alias.json'),alias)
-    atomic_json(Path(ROOT)/'suite-result.json',{'executed':True,'network':'studionet','synthetic_evidence':True,'cases':{case['case_id']:case['expected'] for case in corpus['cases']}})
+    atomic_json(Path(ROOT)/'suite-result.json',{'executed':True,'network':'studionet','synthetic_evidence':True,'cases':{case['case_id']:case['expected'] for case in corpus['cases']},'organization_receiver_role':'negative compatibility probe: obligation consumer quarantines organization schema certificates'})
 
 
 if __name__=='__main__':run()

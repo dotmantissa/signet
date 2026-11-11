@@ -101,7 +101,7 @@ def run_case(sessions,state,corpus,case,root='evidence/studio'):
     owner.transaction('publish-'+name,state['resolver'],'publish_to',[name,receiver,name])
     delivery=owner.wait_delivery(state['resolver'],receiver,name)
     operation=principal.read(receiver,'get_operation',[name])
-    expected='PERMITTED' if case['expected']=='SAME' else 'REFUSED_UNRESOLVED' if case['expected']=='UNKNOWN' else 'REFUSED_DISTINCT'
+    expected='QUARANTINED' if kind=='ORGANIZATION' else 'PERMITTED' if case['expected']=='SAME' else 'REFUSED_UNRESOLVED' if case['expected']=='UNKNOWN' else 'REFUSED_DISTINCT'
     assert operation['effective_status']==expected, name+' consumer did not enforce relation'
     atomic_json(Path(root)/(name+'.consumer.json'),operation)
     if kind=='INCIDENT':
