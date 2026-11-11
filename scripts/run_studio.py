@@ -16,7 +16,7 @@ def credentials():
     return {name+'_key': os.environ.get('SIGNET_'+name.upper()+'_KEY', stored.get(name+'_key')) for name in ['deployer','receivable','incident']}
 
 
-def setup(root='evidence/studio'):
+def setup(root='evidence/studio-reviewed'):
     keys = credentials()
     sessions = {name:Studio(keys[name+'_key'],root) for name in ['deployer','receivable','incident']}
     owner=sessions['deployer']
@@ -32,6 +32,7 @@ def setup(root='evidence/studio'):
     receivers={}
     for kind,filename,key in [('OBLIGATION','receivable','receivable'),('INCIDENT','incident','incident'),('ORGANIZATION','receivable','receivable')]:
         receiver=sessions[key].deploy('deploy-consumer-'+kind.lower(),'contracts/'+filename+'.py',[resolver,kind.lower(),1,schemas[kind][0]])
+        owner.transaction('admit-'+kind.lower(),resolver,'admit_consumer',[receiver,True])
         sessions[key].transaction('approve-'+kind.lower(),receiver,'approve_configuration')
         receivers[kind]=receiver
     corpus=json.loads(Path('evidence/public-sources.json').read_text())
@@ -55,7 +56,7 @@ def revise_gist(corpus):
     atomic_json(journal,{'gist_id':corpus['gist_id'],'synthetic':True,'changed_file':'changed-source-1.txt','new_byte_hash':hashlib.sha256(changed.encode()).hexdigest(),'revision':updated['history'][0]['version']})
 
 
-def run_case(sessions,state,corpus,case,root='evidence/studio'):
+def run_case(sessions,state,corpus,case,root='evidence/studio-reviewed'):
     name,kind=case['case_id'],case['kind']
     owner=sessions['deployer']
     role='incident' if kind=='INCIDENT' else 'receivable'
@@ -77,6 +78,8 @@ def run_case(sessions,state,corpus,case,root='evidence/studio'):
             source['required_spans'][0]['span_hash']='0'*64
         principal.transaction('attest-'+name+'-'+str(side),state['resolver'],'attest_source',[canonical(source)])
         manifests.append({'subject_id':record['subject_id'],'sources':[source]})
+    for side,manifest in enumerate(manifests):
+        principal.transaction('manifest-'+name+'-'+str(side),state['resolver'],'approve_record_manifest',[kind.lower(),canonical(manifest)])
     if kind=='INCIDENT':
         consequence={'action':'LINK_INCIDENT','canonical_id':manifests[1]['subject_id'],'record_id':manifests[0]['subject_id'],'link_owner':principal.account.address.lower()}
     else:

@@ -8,13 +8,14 @@ import argparse
 import base64
 import hashlib
 import json
+import os
 from pathlib import Path
 
 from scripts.run_studio import credentials
 from scripts.studio import Studio, atomic_json
 
 
-ROOT = Path('evidence/studio-final')
+ROOT = Path(os.environ.get('SIGNET_EVIDENCE_DIR', 'evidence/studio-reviewed'))
 
 
 def collect_children(session, receipt, label):

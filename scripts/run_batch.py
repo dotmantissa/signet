@@ -1,6 +1,7 @@
 """Run independent Studio test cases in bounded, journaled transaction waves."""
 import hashlib
 import json
+import os
 import subprocess
 import time
 from pathlib import Path
@@ -9,7 +10,7 @@ from scripts.run_studio import credentials, revise_gist
 from scripts.envelopes import canonical, source_manifest, request_envelope
 from scripts.studio import Studio, atomic_json
 
-ROOT = 'evidence/studio-final'
+ROOT = os.environ.get('SIGNET_EVIDENCE_DIR', 'evidence/studio-reviewed')
 SCHEMAS = {'OBLIGATION':['payer_id','payee_id','consideration','period','amount_minor','currency'],'INCIDENT':['event_date','location_id','event_kind','occurrence_id'],'ORGANIZATION':['official_id','jurisdiction']}
 
 
@@ -41,6 +42,7 @@ def run():
         results=session.finish_batch([(label,tx) for _,s,label,tx in deployments if s is session])
         for kind,s,label,tx in deployments:
             if s is session: receivers[kind]=results[label]['data']['contract_address']
+    queue_wave([(owner,'admit-'+k.lower(),resolver,'admit_consumer',[receiver,True]) for k,receiver in receivers.items()])
     queue_wave([(sessions['incident' if k=='INCIDENT' else 'receivable'],'approve-'+k.lower(),receiver,'approve_configuration',[]) for k,receiver in receivers.items()])
     corpus=json.loads(Path('evidence/public-sources.json').read_text())
     queue_wave([(owner,'authority-'+role,resolver,'register_authority',[role,sessions[role].account.address,corpus['url_prefix'],corpus['authority_evidence_url']]) for role in sessions])
@@ -74,6 +76,7 @@ def run():
         atomic_json(path,bundle)
         bundles[name]=(case,principal,receiver,bundle)
     queue_wave(tasks)
+    queue_wave([(principal,'manifest-'+name+'-'+str(side),resolver,'approve_record_manifest',[case['kind'].lower(),canonical(bundle[label])]) for name,(case,principal,receiver,bundle) in bundles.items() for side,label in enumerate(['left_manifest','right_manifest'])])
     tasks=[]
     for name,(case,principal,receiver,bundle) in bundles.items():
         e=bundle['envelope']
