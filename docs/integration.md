@@ -4,7 +4,7 @@
 
 `ReceivableConsumer` is a reusable reservation contract, not an issuer of receivables. Its owner registers an existing economic ID and a fixed integer capacity through `register_economic_id(economic_id, capacity_minor)`. Amounts are unsigned 256-bit integers in explicitly recorded minor units. It cannot infer currency scaling from a decimal display value.
 
-The consumer owner grants reservation permission with `set_party(account, allowed)`. A permitted party prepares a hold using:
+The consumer owner grants reservation permission with `set_party(account, allowed)`. The account must also be the subject principal or an operator authorized by that principal through `set_subject_operator()`. A permitted party prepares a hold using:
 
 ```python
 client.write_contract(
@@ -27,7 +27,7 @@ The right-hand historical subject ID in the envelope must equal the existing eco
 
 A pending hold immediately consumes capacity. A second reservation cannot use that pending capacity even before a positive acknowledgement. SAME becomes PERMITTED only through authenticated finalized delivery under an OBLIGATION schema with complete coverage. DISTINCT becomes REFUSED_DISTINCT. UNKNOWN becomes REFUSED_UNRESOLVED. Both retain the hold under KEEP_HOLD until its reservation owner calls `release(operation_id)`.
 
-Only the reservation owner can release the hold, regardless of the resolver owner's or assessor's permissions. Identical repeated reserve and release calls are idempotent. A conflicting reserve under the same operation ID is rejected. Before preparing another generation for the same subject, the original operation owner must release the earlier hold.
+Only the reservation owner can release the hold, regardless of the resolver owner's or assessor's permissions. Identical repeated reserve and release calls are idempotent. A conflicting reserve under the same operation ID is rejected. Identical existing operations remain idempotent after their original admission deadline. Before another generation is prepared, the earlier hold must be released. If a delegated operator is revoked, only the subject principal can call `recover_subject(subject_id)` to retire that operator's hold; repeated recovery cannot release capacity twice.
 
 `get_capacity(economic_id)` returns `capacity_minor`, `held_minor` and `available_minor`. `get_operation(operation_id)` returns the original bindings, consequence, owner, persisted status, current effective status, acknowledgement and last applied generation. Current effective status changes to QUARANTINED when the resolver marks the source, policy or relation inactive, or records a conflicting DISTINCT witness. A builder must check effective status at the time it uses the reservation.
 
@@ -58,7 +58,7 @@ The consequence commitment is exactly:
 
 A finalized SAME certificate under an INCIDENT schema permits the link. `resolve_record(record_id)` returns the canonical ID only while the operation's current effective status is PERMITTED. DISTINCT, UNKNOWN, quarantine and timeout return the historical record ID and a visible status. DO_NOT_LINK is the agreed unresolved consequence.
 
-The operation owner may call `release(operation_id)` to retire a link before preparing a successor generation. The contract keeps the original operation and record IDs. Superseding an erroneous alias does not rewrite consumer history.
+The operation owner may call `release(operation_id)` to retire a link before preparing a successor generation. A subject principal can recover a revoked delegated operator's link with `recover_subject(subject_id)`. The contract keeps the original operation and record IDs. Superseding an erroneous alias does not rewrite consumer history.
 
 The integration test's permitted action links a renamed incident to its existing occurrence. Its refused action retains a recurring incident as a separate record after its date and occurrence ID conflict.
 
@@ -94,7 +94,7 @@ Use `register_consumer()` from the consumer contract itself. Its owner approves 
 
 ## Recovery and rebinding
 
-`publish_to()` journals its broadcast by consumer and operation ID. If the process crashes after broadcast, resume the same journaled transaction hash rather than submitting another arbitrary operation. If delivery completion is uncertain, call `reconcile_delivery()`. The resolver first queries `get_acknowledgement(operation_id)` and verifies its payload digest. It retries only when the acknowledgement is absent, with a maximum of three broadcasts.
+`publish_to()` journals its broadcast by consumer and operation ID. The backend durably records signed bytes before broadcast and binds the operation to its signer, network and chain. After interruption, resume that same prepared transaction. The CLI uses an explicit `--attempt-id` to distinguish resuming a reconciliation from initiating another bounded attempt. If delivery completion is uncertain, call `reconcile_delivery()`. The resolver first queries `get_acknowledgement(operation_id)` and verifies its payload digest. It retries only when the acknowledgement is absent, with a maximum of three broadcasts.
 
 If the delivery remains unresolved, keep the prepared consumer restriction. Recovery does not assume that an unacknowledged action was never applied. For a changed source, obtain a newly attested sequential source revision and create a successor request. A finalized successor marks the predecessor SUPERSEDED while preserving its original IDs and references.
 

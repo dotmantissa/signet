@@ -4,7 +4,7 @@
 
 The deployment signer owns configuration. It may grant assessment permission, register immutable schema and policy versions, disclose source authority configurations, and quarantine policies, authorities, source revisions, consumers or relations. It cannot edit a locked request, change an attested revision, forge a source principal's signature, approve another consumer's configuration, or release somebody else's hold.
 
-Only a configured principal can attest a source in that principal's approved HTTPS channel. Each subject ID belongs to the principal that first attests it. Assessment permission grants no source, consumer or reservation authority. Consumer configuration registration must arrive from the consumer contract address; its own owner triggers the finalized registration message.
+Only a configured principal can attest a source in that principal's approved HTTPS channel. Each subject ID belongs to the principal that first attests it. Assessment permission grants no source, consumer or reservation authority. The resolver owner must admit the consumer, and configuration registration must arrive from that consumer contract address; its own owner triggers the finalized registration message.
 
 Source trust is explicit delegation by the resolver owner. It does not establish that a principal owns every publisher, that a document is universally true, or that the originator is authentic beyond this configuration. Public evidence discloses the delegated provenance. Validators retrieve the committed bytes independently and verify required span commitments. They inspect the complete packet for contrary facts and controlling exceptions. Instructions embedded in a source have no policy authority.
 
@@ -47,7 +47,7 @@ flowchart LR
 
 LOCKED, EVALUATING, UNRESOLVED and ASSESSED are not consequence-bearing finality states. A failed semantic transaction leaves its previously reserved attempt consumed. Three attempts are permitted for a locked source revision. Scheduling after three failed executions exposes a canonical UNKNOWN result with `RETRY_EXHAUSTED`. A source outage remains unavailable and never creates an affirmative fact or an absence certificate.
 
-FINALIZED means the authenticated self-message emitted on GenLayer transaction finalization has executed. The decision inside that state may be SAME, DISTINCT or UNKNOWN. Deadline exhaustion has an UNKNOWN vector with `DEADLINE_EXPIRED`, delivered through the same finality barrier. SUPERSEDED and QUARANTINED retain their envelope, result and historical references. An unavailable message scheduler leaves the request pending rather than manufacturing finality.
+FINALIZED means the authenticated self-message emitted on GenLayer transaction finalization has executed. The decision inside that state may be SAME, DISTINCT or UNKNOWN. Deadline exhaustion has an UNKNOWN vector with `DEADLINE_EXPIRED`, delivered through the same finality barrier. SUPERSEDED and QUARANTINED retain their envelope, result and historical references. An unavailable message scheduler leaves the request pending rather than manufacturing finality. The request owner may call `evaluate()` on ASSESSED to reschedule its finalized confirmation after a 60-second interval, with at most three confirmation submissions.
 
 ## Identity kernel
 
@@ -59,13 +59,13 @@ For an incident, event date, location ID, event kind and occurrence ID identify 
 
 For an organization, official ID and jurisdiction control identity. Matching names with different official IDs are distinct. Names alone cannot support the mandatory fields.
 
-The semantic extractor returns facts, flags and witnesses. The deterministic kernel computes the relation. Validators derive those facts independently and compare the material vector, rather than accepting a leader's JSON label. Values use whitespace and case normalization; dates and quantities retain their identifying meaning. Descriptive translations must independently yield the same normalized fact. Disagreement is a consensus failure, not permission to merge.
+The semantic extractor returns facts, flags and witnesses. The deterministic kernel computes the relation. Validators derive those facts independently and compare the material vector, rather than accepting a leader's JSON label. Official identifier spelling and case are preserved. Semantic descriptions use whitespace and case normalization; dates and quantities retain their identifying meaning. Authoritative decision fields require exact nested types and are deterministically reconstructed after consensus. Descriptive translations must independently yield the same normalized fact. Disagreement is a consensus failure, not permission to merge.
 
 Witnesses identify raw SHA-256 source bytes and their half-open UTF-8 line spans. Each participant extracts adequate supporting span sets. A leader's selected witness must belong to the validator's independently supported set for that same fact and side. Canonical selection uses the lowest lexical ID within the leader's adequate set. This admits equivalent independently supported witness sets without comparing arbitrary prose or requiring arbitrary set equality. Unsupported, missing, hallucinated or wrong-side witnesses fail validation.
 
 ## Alias safety and revisions
 
-Clusters contain at most four historical IDs. Before joining clusters, the resolver checks at most sixteen cross-pair indexes. Every cross-pair must have an active finalized SAME witness under the same policy version, scope and discriminator fingerprint. Existing cluster witnesses must remain active. Known DISTINCT witnesses persist across policy revisions, quarantine and UNKNOWN successors. Each pair admits at most sixteen historical DISTINCT witnesses during alias registration; above that bound registration returns unresolved. An explicitly bound, active SAME successor can correct its exact negative witness, while every other active negative witness retains its veto.
+Clusters contain at most four historical IDs. Before joining clusters, the resolver checks at most sixteen cross-pair indexes. Every cross-pair must have an active finalized SAME witness under the same policy version, scope and discriminator fingerprint. Every cluster edge is bound to its exact finalized witness and must remain active with the recorded policy, scope and discriminator fingerprint. Replacing a pair witness cannot silently change an existing cluster. Known DISTINCT witnesses persist across policy revisions, quarantine and UNKNOWN successors. Each pair admits at most sixteen historical DISTINCT witnesses during alias registration; above that bound registration returns unresolved. An explicitly bound, active SAME successor can correct its exact negative witness, while every other active negative witness retains its veto. Correction dependencies remain conditional on a current valid SAME ruling; revocation or an UNKNOWN successor restores the earlier veto. Stale sibling finalizations cannot overwrite the current successor chain.
 
 There is no inferred transitive merge across incompatible scopes. Shared causes, related entities and overlapping activities are not identity. UNKNOWN permits no deduplication. A new DISTINCT witness also invalidates prior SAME consumer consequences for the pair.
 
@@ -104,7 +104,7 @@ The delivery journal records QUEUED, ACKNOWLEDGED or UNRESOLVED_DELIVERY with a 
 | Cluster membership | 4 |
 | Cross-cluster pairs | 16 |
 | Historical DISTINCT witnesses per pair at merge | 16 |
-| History | 100,000 journal entries; pages at most 100 |
+| History | 100,000 stored entries; pages at most 100; saturation increments a dropped-event counter and preserves safety writes |
 | Generations and revision counters | Unsigned 64-bit integers |
 | Fixed-point quantities | Unsigned 256-bit integer minor units |
 

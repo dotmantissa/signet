@@ -1,6 +1,8 @@
 # Verification record
 
-The final integration deployment uses hosted GenLayer Studio (`studionet`), chain
+This record describes the initial release. Current deployment addresses, exact source comparisons, consensus/callback chains and live safety probes are preserved in [studio-reviewed](../evidence/studio-reviewed), with the current [verification result](../evidence/studio-reviewed/verification-result.json) and [safety result](../evidence/studio-reviewed/safety-verification-result.json).
+
+The initial integration deployment used hosted GenLayer Studio (`studionet`), chain
 61999, and the pinned runner
 `py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6`.
 Deployment addresses, signing principals, contract source hashes and the source
@@ -33,8 +35,8 @@ source authority disclosure.
 
 ## Deterministic verification
 
-All three contracts pass GenVM AST and SDK semantic checks. The current direct
-suite passes 101 tests; see [direct-tests.txt](../evidence/direct-tests.txt).
+All three contracts pass GenVM AST and SDK semantic checks. The initial direct
+suite passed 101 tests; see [direct-tests.txt](../evidence/direct-tests.txt).
 Four additional tooling tests pass for rate rejection, receipt identity, cached
 execution failure and polling past a cached pending receipt; see
 [tooling-tests.txt](../evidence/tooling-tests.txt). Run them with
@@ -85,7 +87,7 @@ the per-case operation, receipt, relation, consumer and delivery files in
 verify the actual canonical ID for SAME and retained historical ID for DISTINCT.
 All three SAME aliases were verified as active before the later recovery probe.
 
-All four deployed sources match the local contract files byte for byte; see
+At that release, all four deployed sources matched its checkout byte for byte; see
 [code-verification.json](../evidence/studio-final/code-verification.json). Studio
 returns GenVM source as base64 through `gen_getContractCode`; `eth_getCode`
 returns an empty EVM marker for these addresses. The matching source responses

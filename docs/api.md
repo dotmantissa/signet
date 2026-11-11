@@ -27,18 +27,22 @@ Signet takes no arguments. The deployment sender becomes its owner and initial a
 | `register_policy` | `(policy_id, revision, schema_id, scope)`, `("obligation", 1, "obligation:v1", "obligation")` | Owner; immutable version |
 | `register_authority` | `(authority_id, principal, url_prefix, public_evidence_url)`, `("issuer", "0x...", "https://records.publisher.org/public/", "https://records.publisher.org/authority")` | Owner; explicit provenance configuration |
 | `attest_source` | `(source_json)`, `canonical(source)` below | Only configured source principal |
-| `register_consumer` | `(consumer, configuration_json)` below | Must arrive from the consumer contract address |
+| `admit_consumer` | `(consumer, allowed)` | Resolver owner; required before contract-side approval |
+| `approve_record_manifest` | `(scope, manifest_json)` | Subject principal; certifies every registered controlling document in the current packet |
+| `withdraw_source` | `(source_id, reason)` | Bound source principal; explicitly retires a document and invalidates packet approval |
+| `set_subject_operator` | `(subject_id, account, allowed)` | Subject principal; grants or revokes consumer preparation authority |
+| `register_consumer` | `(consumer, configuration_json)` below | Owner admission plus approval from the consumer contract address |
 | `compare_records` | `(request_id, schema_id, left_manifest, right_manifest, envelope_json)`, `("r1", "obligation:v1", canonical(left), canonical(right), canonical(envelope))` | Authorized assessor and bound request owner; locks request without evaluating it |
 | `evaluate` | `(request_id)`, `("r1",)` | Request owner; reserves and emits an assessment attempt, or exposes exhaustion |
 | `assess_attempt` | `(request_id, attempt)`, `("r1", 1)` | Authenticated finalized self-message only; independent semantic consensus |
 | `confirm_relation` | `(request_id)`, `("r1",)` | Authenticated finalized self-message only; records the application finality barrier |
 | `register_alias` | `(subject_id, relation_id)`, `("invoice-reissued", "r1")` | Request owner or covered principal; requires finalized active SAME witnesses; bounded unresolved status otherwise |
-| `quarantine` | `(category, item_id)`, `("source", "invoice-1:1")` | Owner; category is relation, source, policy, authority or consumer |
+| `quarantine` | `(category, item_id)`, `("source", "invoice-1:1")` | Owner; category is relation, source, policy, authority, consumer or manifest |
 | `publish_to` | `(request_id, consumer, operation_id)`, `("r1", "0x...", "reserve-r1")` | Request owner or bound consumer; finalized authenticated emission only |
 | `acknowledge` | `(consumer, operation_id, acknowledgement_json)` | Consumer address only; persists its bound acknowledgement |
 | `reconcile_delivery` | `(consumer, operation_id)`, `("0x...", "reserve-r1")` | Request owner or consumer; reads acknowledgement before bounded retransmission |
 
-Registering a byte-for-byte identical schema, policy, authority, source revision, consumer configuration or request is idempotent. Conflicting ID reuse is an expected error. Source heads advance sequentially from revision 1. A subject's first attesting principal owns its provenance binding. The owner cannot subsequently overwrite that binding.
+Registering a byte-for-byte identical schema, policy, authority, source revision, consumer configuration or request is idempotent. Conflicting ID reuse is an expected error. Source heads advance sequentially from revision 1 and retain their original principal, subject and scope. A new document or revision invalidates the subject's current packet approval; an assessor cannot omit it from a replacement packet. A subject's first attesting principal owns its provenance binding. The owner cannot subsequently overwrite that binding.
 
 Schema field sets are fixed in this deployment. Names, arbitrary new discriminators, private personal identity and biometrics are not supported. Organization schemas require official ID and jurisdiction; incident schemas require event date, location ID, event kind and occurrence ID. `schema_id` is an immutable identifier, not a prompt.
 
@@ -46,9 +50,12 @@ Schema field sets are fixed in this deployment. Names, arbitrary new discriminat
 
 | Method | Example arguments | Return |
 | --- | --- | --- |
-| `get_relation` | `("r1",)` | Bound envelope, lifecycle, canonical decision vector, current validity, attempts, fingerprint and superseding ID |
+| `get_relation` | `("r1",)` | Bound envelope, lifecycle, typed canonical decision vector, current validity, semantic and confirmation attempts, fingerprint and superseding ID |
 | `get_alias` | `("invoice-reissued",)` | Historical ID, effective canonical ID, bounded cluster and current validity |
 | `get_cluster` | `(cluster_id,)` | Historical members, controlling relation, policy key, active flag and superseding ID |
+| `get_record_manifest` | `(subject_id, scope)` | Current complete source objects and approval digest |
+| `get_subject_principal` | `(subject_id,)` | Immutable source principal address |
+| `is_subject_authorized` | `(subject_id, account)` | Current principal or delegated operator authorization |
 | `get_configuration` | `("policy", "obligation:1")` | Immutable payload and active flag; category is schema, policy or authority |
 | `get_delivery` | `("0x...", "reserve-r1")` | Request ID, operation ID, status, attempts, payload digest and acknowledgement JSON |
 | `history_page` | `(0, 100)` | Up to 100 canonical journal strings |
@@ -93,7 +100,7 @@ issuer_client.write_contract(resolver_address, "attest_source", args=[canonical(
 }
 ```
 
-The example digest placeholders illustrate types. Executable builders compute actual commitments; complete real test requests appear under `evidence/studio-final/`. Byte offsets are half-open `[start,end)`. A required span must be a complete nonempty line in the deterministic raw UTF-8 mapping, including its existing newline bytes. The helper commits every nonempty line. Witness IDs are `raw_hash:start:end`. Identical line text in another document does not authorize changing the raw source hash.
+The example digest placeholders illustrate types. Executable builders compute actual commitments; complete real test requests appear under `evidence/studio-reviewed/`. Byte offsets are half-open `[start,end)`. A required span must be a complete nonempty line in the deterministic raw UTF-8 mapping, including its existing newline bytes. The helper commits every nonempty line. Witness IDs are `side:source_id:raw_hash:start:end`, preserving attribution even when both documents have identical bytes. Identical line text in another document does not authorize changing the raw source hash.
 
 ```json
 {
@@ -115,7 +122,7 @@ The executable manifest uses source objects. It requires at least one source per
 }
 ```
 
-The incident policy uses `DO_NOT_LINK`. `approve_configuration()` constructs and sends this object from the consumer address. Custom consumer contracts must approve their own configuration through the same authenticated route. Assessment permission cannot substitute for consumer approval.
+The incident policy uses `DO_NOT_LINK`. `approve_configuration()` constructs and sends this object from the consumer address. Custom consumer contracts must approve their own configuration through the same authenticated route. The resolver owner must first call `admit_consumer(consumer, True)`. Assessment permission cannot substitute for either admission or consumer approval.
 
 ## Request envelope
 
