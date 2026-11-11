@@ -24,6 +24,7 @@ def main():
     for command in ['publish','reconcile']:
         p=sub.add_parser(command);p.add_argument('resolver');p.add_argument('consumer');p.add_argument('operation_id')
         if command=='publish':p.add_argument('request_id')
+        else:p.add_argument('--attempt-id', required=True, help='Reuse to resume; change for the next bounded reconciliation attempt')
     receipt=sub.add_parser('receipt');receipt.add_argument('transaction_hash');receipt.add_argument('--operation-id',required=True)
     args=parser.parse_args()
     key=os.environ.get('SIGNET_PRIVATE_KEY')
@@ -44,7 +45,7 @@ def main():
     elif args.command=='publish':
         result=session.transaction('publish-'+args.operation_id,args.resolver,'publish_to',[args.request_id,args.consumer,args.operation_id])
     elif args.command=='reconcile':
-        result=session.transaction('reconcile-'+args.operation_id,args.resolver,'reconcile_delivery',[args.consumer,args.operation_id])
+        result=session.reconcile('reconcile-'+args.operation_id,args.resolver,args.consumer,args.operation_id,args.attempt_id)
     else:
         result=session.wait(args.transaction_hash,args.operation_id)
     print(json.dumps(result,indent=2,default=str))
