@@ -1,0 +1,11 @@
+# Signet architecture
+
+Signet settles whether two public records denote one organization, incident or economic obligation. It owns the source commitments, locked requests, independently validated identity relation, bounded alias registry and authenticated delivery journal. Applications own reservations and directory links. Source principals attest provenance; validators establish the identity relation under an explicit policy, not the universal truth of the source.
+
+A principal signs source registration transactions after the resolver owner discloses and configures the principal's authority and HTTPS channel. A request locks its policy version, source revisions, two subjects, consequence, consumer and deadline. Each validator retrieves every committed document and verifies its complete SHA-256 commitment. Sources are untrusted data. One semantic extraction runs per participant. A deterministic rule kernel derives SAME, DISTINCT or UNKNOWN from independently extracted mandatory discriminators and controlling exceptions. No names-only schema is accepted.
+
+Delivery uses `emit(on="finalized")`, first to Signet itself to record a finality barrier, then to the approved consumer. The consumer authenticates `sender_address`, checks the committed request and operation, and checks active policy and source revisions at action time. Views support revocation checks; they never supply the initial finality proof. Acknowledgements return through finalized messages. Reconciliation looks up the operation acknowledgement before retrying a delivery.
+
+Alias clusters contain at most four historical subject IDs. A merge needs an active, finalized SAME witness for every cross-cluster pair and matching policy and discriminator scopes. A known DISTINCT edge vetoes the merge. Splitting a disputed cluster is bounded and retains historical cluster and relation records. Consumers keep the original subject and relation references; they can check their current validity without changing historical IDs.
+
+Requests do not become protocol-final merely because evaluation returned. `ASSESSED` becomes `FINALIZED` only through the authenticated self-message emitted at finalization. Missing messages remain recoverable pending delivery. The application never rotates validators or manufactures protocol finality.
