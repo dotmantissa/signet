@@ -75,8 +75,9 @@ def run():
 
     request_id = 'safety-correction'
     e = assessment_envelope(owner, request_id, manifests, consumer, 2, 'invoice-next-month')
-    queue_wave([(principal, 'release-before-' + request_id, consumer, 'release', ['invoice-next-month']), (principal, 'prepare-' + request_id, consumer, 'reserve', [request_id, canonical(e), e['right_subject_id'], 12500])])
-    _, results = assess_wave(owner, resolver, consumer, [('safety-correction', manifests, 2, 'invoice-next-month'), ('safety-ab', [clique[0], clique[1]], 1, ''), ('safety-bc', [clique[1], clique[2]], 1, ''), ('safety-ac', [clique[0], clique[2]], 2, '')])
+    principal.transaction('release-before-' + request_id, consumer, 'release', ['invoice-next-month'])
+    principal.transaction('prepare-' + request_id, consumer, 'reserve', [request_id, canonical(e), e['right_subject_id'], 12500])
+    _, results = assess_wave(owner, resolver, consumer, [('safety-correction', manifests, 2, 'invoice-next-month'), ('safety-ab', [clique[0], clique[1]], 1, ''), ('safety-bc', [clique[1], clique[2]], 1, ''), ('safety-ac', [clique[2], clique[0]], 1, '')])
     queue_wave([(owner, 'publish-' + request_id, resolver, 'publish_to', [request_id, consumer, request_id]), (owner, 'alias-safety-ab', resolver, 'register_alias', [clique[0]['subject_id'], 'safety-ab']), (owner, 'alias-safety-ac', resolver, 'register_alias', [clique[0]['subject_id'], 'safety-ac']), (owner, 'alias-' + request_id, resolver, 'register_alias', [e['subject_id'], request_id])])
     publish = json.loads((ROOT / ('publish-' + request_id + '.receipt.json')).read_text())
     owner.wait_delivery(resolver, consumer, request_id)
