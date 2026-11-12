@@ -1,7 +1,13 @@
 # Public verification evidence
 
-`studio-final/` contains the executed Studio chain 61999 deployment and test
-journal. The corpus is publicly disclosed synthetic evidence authored for these
+[`studio-reviewed/`](studio-reviewed/) contains the current executed Studio chain
+61999 deployment and test journal. Its [verification result](studio-reviewed/verification-result.json)
+and [safety result](studio-reviewed/safety-verification-result.json) record matching
+deployed sources, independently agreed assessments, consumer effects and recovery
+probes. The [verification summary](remediation-2026-11-11/verification-summary.json)
+binds the contract hashes to 239 passing tests and all three successful lint/SDK
+checks. `studio-final/` preserves the initial deployment and historical observations.
+The corpus is publicly disclosed synthetic evidence authored for these
 tests; it asserts no actual economic rights, incident history or issuer status.
 Source authority is the configured owner's explicit delegation to the recorded
 signing principals.
@@ -34,5 +40,5 @@ a mutable URL; `studio-final/changed-source-edit.json` records the later edit.
 files document local checks and baseline runtime compatibility.
 
 Prior setup/release journals remain local recovery records. They are excluded
-from Git; `studio-final/` is the published verification deployment. Credentials,
+from Git; `studio-reviewed/` is the current published verification deployment. Credentials,
 local instruction files, recovery checklists and process logs are also excluded.
